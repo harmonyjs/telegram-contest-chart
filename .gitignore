@@ -1,3 +1,7 @@
+# Dist
+dist
+.rpt2_cache
+
 # Logs
 logs
 *.log

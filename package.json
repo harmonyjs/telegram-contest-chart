@@ -1,0 +1,15 @@
+{
+  "name": "telegram-contest-chart",
+  "version": "1.0.0",
+  "repository": "https://github.com/AndreyVavilov/telegram-contest-chart.git",
+  "license": "MIT",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -cw"
+  },
+  "dependencies": {
+    "rollup": "^1.6.0",
+    "rollup-plugin-typescript2": "^0.20.1",
+    "typescript": "^3.3.3333"
+  }
+}
