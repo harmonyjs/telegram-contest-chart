@@ -1,14 +1,14 @@
 import Chart from './chart';
 import Line from './line';
 import Monitor from './monitor';
-import { interpolate, InterpolationFunction } from './utils';
+import { animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
 import EventEmitter, { Event } from './event-emitter';
 
 export interface BrushChangeEvent extends Event {
     window: BrushWindow
 };
 
-export type BrushWindow = [number, number];
+export type BrushWindow = [AnimationCallback, number];
 
 export type BrushOptions = {
     chart: Chart;
@@ -66,7 +66,7 @@ export default class Brush extends EventEmitter {
 
         this.lines = options.lines;
 
-        this.window = [10, 30];
+        this.window = [() => 10, 30];
 
         this.dataLength = options.dataLength;
 
@@ -76,7 +76,7 @@ export default class Brush extends EventEmitter {
         this.windowWidth = 0;
 
         this.m.set('brush', {
-            window: this.window,
+            // window: this.window,
             dataLength: this.dataLength,
             position: this.position,
             width: this.width,
@@ -147,14 +147,22 @@ export default class Brush extends EventEmitter {
             const { clientX, rect, inWindow } = this.brushWindowDnDSession;
             const delta = event.clientX - clientX;
             this.brushWindowDnDSession.clientX = event.clientX;
-            this.position = event.clientX - rect.left - inWindow + delta;
-            this.window[0] = this.interpolateWindowWidthToPoints(this.position / this.width);
+            this.position = Math.max(event.clientX - rect.left - inWindow + delta, 0);
+            // this.window[0] = Math.max(this.interpolateWindowWidthToPoints(this.position / this.width), 0);
+            const startWithPrev = this.window[0]();
+            const startWithNext = Math.max(this.interpolateWindowWidthToPoints(this.position / this.width), 0);
+            this.window[0] = animation({
+                from: startWithPrev, 
+                to: startWithNext, 
+                seconds: .12,
+                isLinear: true
+            });
             this.emit('change', {
                 window: this.window
             });
             this.m.set('brush', {
                 position: this.position,
-                window: this.window,
+                // window: this.window,
             });
             this.brushWindow.style.transform = `translateX(${this.position}px)`;
         }
@@ -183,13 +191,18 @@ export default class Brush extends EventEmitter {
         return this.container;
     }
 
+    getWindow() {
+        const [startWith, points] = this.window;
+        return [startWith(), points];
+    }
+
     updateWindowWidth(width: number) {
         this.brushWindow.style.width = `${width}px`;
         // 
         this.windowWidth = width;
         this.window[1] = this.interpolateWindowWidthToPoints(width / this.width);
         this.m.set('brush', {
-            window: this.window,
+            // window: this.window,
             windowWidth: this.windowWidth
         });
     }
@@ -203,7 +216,7 @@ export default class Brush extends EventEmitter {
         this.interpolatePointsToWindowWidth = interpolate(0, this.width);
         this.windowWidth = this.interpolatePointsToWindowWidth((size) / (this.dataLength - 1));
         this.brushWindow.style.width = `${this.windowWidth}px`;
-        this.position = this.interpolatePointsToWindowWidth(startWith / (this.dataLength - 1));
+        this.position = this.interpolatePointsToWindowWidth(startWith() / (this.dataLength - 1));
         this.brushWindow.style.transform = `translateX(${this.position}px)`;
         this.m.set('brush', {
             width: this.width,

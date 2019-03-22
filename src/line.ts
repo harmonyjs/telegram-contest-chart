@@ -1,6 +1,7 @@
 import Chart from './chart';
 import Monitor from './monitor';
-import { interpolate, InterpolationFunction } from './utils';
+import { toInt, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
+import render from './render';
 
 export type LineOptions = {
     chart: Chart;
@@ -23,6 +24,8 @@ export default class Line {
     name: string;
     data: Int32Array;
 
+    private _prevMax?: number;
+
     private _max?: number;
     private _min?: number;
 
@@ -32,6 +35,10 @@ export default class Line {
     height: number;
 
     m: Monitor;
+    
+    empty: boolean;
+
+    _maxValueAnimation?: AnimationCallback;
 
     constructor(private options: LineOptions) {
 
@@ -64,17 +71,17 @@ export default class Line {
         this.context.translate(0, this.height);
         this.context.scale(1, -1);
 
-        this.initialize();
-    }
-
-    initialize() {
-
+        this.empty = true;
     }
 
     render() {
         const { isBrush } = this.options;
         const ctx = this.context;
         const data = this.data;
+
+        if (!this.empty) {
+            this.clear();
+        }
 
         ctx.imageSmoothingEnabled = false;
         
@@ -86,12 +93,12 @@ export default class Line {
 
         const [from, numOfPoints] = (
             isBrush ? [0, this.data.length]
-                    : this.chart.brush.window
+                    : this.chart.brush.getWindow()
         );
 
         const interpolateY = interpolate(0, this.height);
 
-        const max = this.chart.getMax();
+        const max = isBrush ? this.chart.getMax() : this.chart.getCurrentMax();
 
         const leftPad = from % 1;
         const rightPad = numOfPoints % 1;
@@ -123,14 +130,11 @@ export default class Line {
             return;
         }
 
-
-        console.log('======================================');
-
         const pPlus2 = Math.ceil(numOfPoints) + 2;
 
         const ax = [];
         for (let i = 0; i < pPlus2; i++) {
-            console.log({ i });
+            // console.log({ i });
             const pointNum = startWith + i;
             const x = this.chart.interpolateX((i - leftPad) / (numOfPoints));
             const y = interpolateY(data[pointNum] / max);
@@ -144,9 +148,16 @@ export default class Line {
             // console.log({ x, y })
         }
 
-        console.log(ax);
+        // console.log(ax);
         
         ctx.stroke();
+        
+        this.empty = false;
+
+        // if (this._maxValueAnimation) {
+            render(() => this.render());
+            // render(() => setTimeout(() => this.render(), 0));
+        // }
     }
 
     clear() {
@@ -161,6 +172,8 @@ export default class Line {
 
         // Restore the transform
         ctx.restore();
+
+        this.empty = true;
     }
 
     getContext() {
@@ -190,6 +203,40 @@ export default class Line {
         }
         const min = Math.min(0, ...this.data);
         this._min = min;
+        return min;
+    }
+
+    getCurrentMax() {
+        const [startWith, points] = this.chart.brush.getWindow();
+        const data = this.data.slice(toInt(startWith), toInt(startWith+points));
+        const max = Math.max(...data);
+        if (this._prevMax && this._prevMax !== max) {
+            this._maxValueAnimation = animation({
+                from: this._prevMax, 
+                to: max, 
+                seconds: .33
+            });
+            this._prevMax = max;
+        }
+        if (this._maxValueAnimation) {
+            const value = this._maxValueAnimation();
+            if (value === this._prevMax) {
+                delete this._maxValueAnimation;
+            }
+            return value;
+        }
+        this._prevMax = max;
+        return max;
+    }
+
+    getCurrentMin() {
+        const { isBrush } = this.options;
+        // if (typeof this._min === 'number') {
+        //     return this._min;
+        // }
+        const [startWith, points] = this.chart.brush.getWindow();
+        const min = Math.min(0, ...this.data.slice(toInt(startWith), toInt(points)));
+        // this._min = min;
         return min;
     }
 

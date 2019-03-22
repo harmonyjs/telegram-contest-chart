@@ -2,6 +2,7 @@ import Line from './line';
 import { interpolate, InterpolationFunction } from './utils';
 import Brush, { BrushChangeEvent } from './brush';
 import Monitor from './monitor';
+import render from './render';
 
 export type ChartColumn = Array<string|number>;
 
@@ -132,11 +133,9 @@ export default class Chart {
     }
 
     handleWindowChange(event: BrushChangeEvent) {
-
-        this.lines.forEach(line => {
-            line.clear();
-            line.render();
-        });
+        this.lines.forEach(line => 
+            render(() => line.render())
+        );
     }
 
     getContainerWidth(): number {
@@ -150,6 +149,14 @@ export default class Chart {
 
     getMin() {
         return Math.min(...this.lines.map(line => line.getMin()));
+    }
+
+    getCurrentMax() {
+        return Math.max(...this.lines.map(line => line.getCurrentMax()));
+    }
+
+    getCurrentMin() {
+        return Math.min(...this.lines.map(line => line.getCurrentMin()));
     }
 
 }
