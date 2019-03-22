@@ -29,3 +29,108 @@ html {
 canvas {
     vertical-align: middle;
 }
+
+
+/* ==========================================================================
+   Chart related styles
+   ========================================================================== */
+
+.main {
+    padding: 54px;
+}
+
+.tgc-chart__console {
+    margin: 48px 24px 0;
+    border: 1px rgba(0, 0, 0, .12) solid;
+    border-radius: 4px;
+    padding: 24px;
+}
+
+.tgc-chart {
+    display: flex;
+    flex-direction: column;
+}
+
+.tgc-chart__title {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: bold;
+}
+
+.tgc-lines {
+    position: relative;
+    flex: 1;
+    outline: 1px rgba(0, 0, 0, .12) solid;
+}
+
+.tgc-lines__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.tgc-lines__canvas:first-child {
+    position: relative;
+}
+
+.tgc-brush {
+    display: flex;
+    position: relative;
+    height: 40px;
+    overflow: hidden;
+}
+
+.tgc-brush__lines {
+    position: relative;
+    flex: 1;
+}
+
+.tgc-brush__line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.tgc-brush__window {
+    box-sizing: border-box;
+    height: 38px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 1px rgba(100, 100, 200, .3) solid;
+    border-left-width: 5px;
+    border-right-width: 5px;
+    box-shadow: 0 0 0 1000px rgba(100, 100, 200, .1);
+    transform: translate(0, 0);
+}
+
+
+.tgc-brush__handle {
+    width: 15px;
+    display: block;
+    content: ' ';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.tgc-brush__handle-left {
+    background-color: rgba(200, 0, 0, .005);
+    transform: translateX(-10px);
+    left: 0;
+}
+
+.tgc-brush__handle-right {
+    background-color: rgba(0, 200, 0, .005);
+    transform: translateX(10px);
+    right: 0;
+}
+
+.tgc-monitor {
+    display: flex;
+    justify-content: space-between;
+}
