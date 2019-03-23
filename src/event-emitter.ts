@@ -2,7 +2,7 @@ export interface Event {
     [prop: string]: any
 };
 
-export type Callback = (event: Event) => void;
+export type Callback = (event?: Event) => void;
 
 export default class EventEmitter {
 
@@ -14,7 +14,7 @@ export default class EventEmitter {
         this._events = {};
     }
 
-    emit(name: string, event: Event) {
+    emit(name: string, event?: Event) {
         (this._events[name] || []).forEach(cb => cb(event));
         return this;
     }

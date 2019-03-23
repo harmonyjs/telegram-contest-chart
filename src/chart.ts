@@ -1,9 +1,10 @@
 import Line from './line';
-import { interpolate, InterpolationFunction } from './utils';
+import { interpolate, InterpolationFunction, animation, AnimationCallback } from './utils';
 import Brush, { BrushChangeEvent } from './brush';
 import YAxis from './y-axis';
 import Monitor from './monitor';
 import render from './render';
+import { LINE_TYPE, Y_AXIS_ANIMATION_DURATION } from './constants';
 
 export type ChartColumn = Array<string|number>;
 
@@ -48,6 +49,10 @@ export default class Chart {
 
     yAxis: YAxis;
 
+    _maxValueAnimation?: AnimationCallback;
+
+    private _prevMax?: number;
+
     get title() {
         const { title } = this.options;
         return title || `Unnamed Chart`;
@@ -82,7 +87,7 @@ export default class Chart {
         `;
 
         const monitor = new Monitor({});
-        monitor.appendTo(this.container);
+        // monitor.appendTo(this.container);
 
         const linesContainer = this.container.querySelector('.tgc-lines');
         const viewportContainer = this.container.querySelector('.tgc-viewport');
@@ -95,30 +100,43 @@ export default class Chart {
 
         for (let i = 0; i < this.data.columns.length; i++) {
             const column = this.data.columns[i];
-            const [name, ...dataArray] = column;
-            if (name === 'x') continue;
+            const [alias, ...dataArray] = column;
+            const type = this.data.types[alias];
+            if (type !== LINE_TYPE) continue;
+            const name = this.data.names[alias];
+            const color = this.data.colors[alias];
             const data = new Int32Array(dataArray as number[]);
             dataLength = Math.max(data.length, dataLength);
-            this.lines.push(new Line({
+
+            const line = new Line({
                 chart: this,
-                name: name as string,
+                alias: alias as string,
+                name,
+                color,
                 data,
                 width: this.width,
                 height: this.height,
                 className: "tgc-lines__canvas",
                 isBrush: false,
                 monitor
-            }));
-            this.brushLines.push(new Line({
+            });
+            line.on('animation-end', this.handleLineAnimationEnd.bind(this));
+            this.lines.push(line);
+
+            const brushLine = new Line({
                 chart: this,
-                name: name as string,
+                alias: alias as string,
+                name,
+                color,
                 data,
                 width: this.width,
-                height: 40,  // TODO
+                height: 50,  // TODO
                 className: "tgc-brush__line",
                 isBrush: true,
                 monitor
-            }));
+            });
+            brushLine.on('animation-end', this.handleLineAnimationEnd.bind(this));
+            this.brushLines.push(brushLine);
         }
 
         linesContainer.append(...this.lines.map(line => line.getContainer()));
@@ -139,15 +157,28 @@ export default class Chart {
 
         this.brush.on('change', this.handleWindowChange.bind(this));
 
+        (window as any).render = this.handleWindowChange.bind(this);
+
         this.lines.forEach(line => line.render());
         this.brushLines.forEach(line => line.render());
     }
 
-    handleWindowChange(event: BrushChangeEvent) {
-        const max = this.getCurrentMax();
-        this.lines.forEach(line=> 
-            render('line ' + line.name, () => line.render())
-        );
+    render(recursive: boolean = false) {
+        if (recursive && !this._maxValueAnimation && !this.brush.hasAnimation()) {
+            return;
+        }
+        this.lines.forEach(line => line.render());
+        render('chart render', () => this.render(true));
+    }
+
+    handleWindowChange() {
+        console.log('handleWindowChange');
+        render('chart render', () => this.render());
+    }
+
+    handleLineAnimationEnd() {
+        console.log('handleLineAnimationEnd');
+        render('chart render', () => this.render());
     }
 
     getContainerWidth(): number {
@@ -164,11 +195,33 @@ export default class Chart {
     }
 
     getCurrentMax() {
-        return Math.max(...this.lines.map(line => line.getCurrentMax()));
+        const max = this.getCurrentMaxExact();
+        // console.log(toInt(startWith), toInt(startWith+numOfOperatingPoints));
+        // console.log(max);
+        if (this._prevMax && this._prevMax !== max) {
+            const from = this._maxValueAnimation ? this._maxValueAnimation() : this._prevMax;
+            this._maxValueAnimation = animation({
+                from, 
+                to: max, 
+                seconds: Y_AXIS_ANIMATION_DURATION,
+                callback: this.handleLineAnimationEnd.bind(this)
+            });
+            this._prevMax = max;
+            return this._maxValueAnimation();
+        }
+        if (this._maxValueAnimation) {
+            const value = this._maxValueAnimation();
+            if (value === this._prevMax) {
+                delete this._maxValueAnimation;
+            }
+            return value;
+        }
+        this._prevMax = max;
+        return max;
     }
 
     getCurrentMaxExact() {
-        return Math.max(...this.lines.map(line => line.getCurrentMaxExact()));
+        return Math.max(...this.lines.map(line => line.getCurrentMax()));
     }
 
     getCurrentMin() {

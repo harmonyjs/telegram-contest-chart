@@ -2,11 +2,14 @@ import Chart from './chart';
 import Monitor from './monitor';
 import { toInt, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
 import render from './render';
-import { Y_AXIS_ANIMATION_DURATION, SHOULD_COUNT_EXTRA_POINT_IN_MAX } from './constants';
+import { MAIN_LINE_WIDTH, BRUSH_LINE_WIDTH, Y_AXIS_ANIMATION_DURATION, SHOULD_COUNT_EXTRA_POINT_IN_MAX } from './constants';
+import EventEmitter from './event-emitter';
 
 export type LineOptions = {
     chart: Chart;
+    alias: string;
     name: string;
+    color: string;
     data: Int32Array;
     width: number;
     height: number;
@@ -15,7 +18,9 @@ export type LineOptions = {
     monitor: Monitor;
 };
 
-export default class Line {
+let prevM = 0;
+
+export default class Line extends EventEmitter {
 
     chart: Chart;
 
@@ -39,9 +44,12 @@ export default class Line {
     
     empty: boolean;
 
+    interpolateY: InterpolationFunction;
+
     _maxValueAnimation?: AnimationCallback;
 
     constructor(private options: LineOptions) {
+        super();
 
         this.chart = options.chart;
 
@@ -53,6 +61,8 @@ export default class Line {
         this.height = options.height;
 
         this.m = options.monitor;
+        
+        this.interpolateY = interpolate(0, this.height);
 
         this.container = document.createElement("div");
 
@@ -76,15 +86,13 @@ export default class Line {
     }
 
     render() {
-        const { isBrush } = this.options;
+        const { isBrush, color } = this.options;
         const ctx = this.context;
         const data = this.data;
 
         if (!this.empty) {
             this.clear();
         }
-
-        const interpolateY = interpolate(0, this.height);
 
         const {
             startWith, 
@@ -112,7 +120,8 @@ export default class Line {
             pointsCeil: pointsCeil
         });
         
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = isBrush ? BRUSH_LINE_WIDTH : MAIN_LINE_WIDTH;
 	    ctx.lineCap = 'round';
 
         ctx.beginPath();
@@ -123,21 +132,17 @@ export default class Line {
             index++, orderNum++
         ) {
             const x = this.chart.interpolateX((orderNum - leftPad) / length);
-            const y = interpolateY(data[index] / max);
+            const y = this.interpolateY(data[index] / max);
             if (orderNum === 0) {
                 ctx.moveTo(x, y);
             }
             ctx.lineTo(x, y);
-            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            // ctx.arc(x, y, 4, 0, 2 * Math.PI);
         }
         
         ctx.stroke();
         
         this.empty = false;
-
-        if (this._maxValueAnimation || this.chart.brush.hasAnimation()) {
-            render('line ' + this.name, () => this.render());
-        }
     }
 
     clear() {
@@ -192,29 +197,6 @@ export default class Line {
     }
 
     getCurrentMax() {
-        const max = this.getCurrentMaxExact();
-        // console.log(toInt(startWith), toInt(startWith+numOfOperatingPoints));
-        // console.log(max);
-        if (this._prevMax && this._prevMax !== max) {
-            this._maxValueAnimation = animation({
-                from: this._prevMax, 
-                to: max, 
-                seconds: Y_AXIS_ANIMATION_DURATION
-            });
-            this._prevMax = max;
-        }
-        if (this._maxValueAnimation) {
-            const value = this._maxValueAnimation();
-            if (value === this._prevMax) {
-                delete this._maxValueAnimation;
-            }
-            return value;
-        }
-        this._prevMax = max;
-        return max;
-    }
-
-    getCurrentMaxExact() {
         const data = this.getCurrentData();
         // console.log(data);
         return Math.max(...data);

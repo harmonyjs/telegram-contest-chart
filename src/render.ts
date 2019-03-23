@@ -17,12 +17,12 @@ function loop() {
             return;
         }
         last = t;
-        // console.log('-------------- raf ----------------', i++);
         const keys = Object.keys(drawTasks);
         if (!keys.length) {
             isRunning = false;
             return;
         }
+        // console.log('-------------- raf ----------------', i++);
         const tasks = drawTasks;
         drawTasks = {};
         while(keys.length) {

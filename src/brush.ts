@@ -85,9 +85,9 @@ export default class Brush extends EventEmitter {
         this.window = [
             // animation({ from: 1.9, to: 1.9, seconds: 0 }), 
             // 1.5
-            animation({ from: 3.9, to: 3.9, seconds: 0 }), 
-            animation({ from: 5.8, to: 5.8, seconds: 0 }),
-            1.9
+            animation({ from: 10, to: 10, seconds: 0 }), 
+            animation({ from: 40, to: 40, seconds: 0 }),
+            30
         ];
 
         this.dataLength = options.dataLength;

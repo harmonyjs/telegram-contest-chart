@@ -29,17 +29,19 @@ export type AnimationOptions = {
     to: number, 
     seconds: number,
     isLinear?: boolean,
-    startTime?: number
+    startTime?: number,
+    callback?: Function
 };
 
 export type AnimationCallback = {
     (): number;
+    from: number;
     to: number;
     finished: boolean;
 }
 
 export function animation(options: AnimationOptions): AnimationCallback {
-    const { from, to, seconds, isLinear = false, startTime = Date.now() } = options;
+    const { from, to, seconds, isLinear = false, startTime = Date.now(), callback } = options;
     const duration = seconds * 1000;
     const endTime = startTime + duration;
     const delta = to - from;
@@ -56,6 +58,9 @@ export function animation(options: AnimationOptions): AnimationCallback {
         const left = Math.max(0, endTime - now);
         const progress = easing((duration - left) / duration);
         if (progress === 1) {
+            if (typeof callback === 'function') {
+                callback();
+            }
             getValue.finished = true;
             return to;
         }
@@ -65,6 +70,7 @@ export function animation(options: AnimationOptions): AnimationCallback {
             // ) * 1000) / 1000
         );
     };
+    getValue.from = from;
     getValue.to = to;
     getValue.finished = false;
     return getValue;
