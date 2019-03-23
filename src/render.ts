@@ -2,11 +2,12 @@ export type DrawTask = () => void;
 
 let isRunning = false;
 
-let drawTasks: DrawTask[] = [];
+let drawTasks: {
+    [type: string]: DrawTask
+} = {};
 
 let last = 0;
 let i = 0;
-let j = 0;
 
 function loop() {
     isRunning = true;
@@ -16,17 +17,19 @@ function loop() {
             return;
         }
         last = t;
-        // console.log('raf', i++);
-        if (!drawTasks.length) {
+        // console.log('-------------- raf ----------------', i++);
+        const keys = Object.keys(drawTasks);
+        if (!keys.length) {
             isRunning = false;
             return;
         }
         const tasks = drawTasks;
-        drawTasks = [];
-        while(tasks.length) {
-            const task = tasks.shift();
+        drawTasks = {};
+        while(keys.length) {
+            const taskKey = keys.shift() || '';
+            const task = tasks[taskKey];
             if (task) {
-                // console.log('task fired', j++);
+                // console.log(taskKey);
                 task();
             }
         }
@@ -34,9 +37,12 @@ function loop() {
     });
 }
 
-export default function render(task: DrawTask) {
-    drawTasks.push(task);
-    // console.log('task added');
+export default function render(type: string, task: DrawTask) {
+    if (drawTasks[type]) {
+        // duplicate
+        return;
+    }
+    drawTasks[type] = task;
     if (!isRunning) {
         loop();
     }

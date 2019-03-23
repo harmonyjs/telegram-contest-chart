@@ -82,6 +82,13 @@ canvas {
     overflow: hidden;
 }
 
+.tgc-viewport {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
 .tgc-brush__lines {
     position: relative;
     flex: 1;
@@ -133,4 +140,28 @@ canvas {
 .tgc-monitor {
     display: flex;
     justify-content: space-between;
+}
+
+.tgc-y {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.tgc-y__num {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-bottom: 1px #eee solid;
+    opacity: 1;
+    transition: transform .33s linear, opacity .33s ease-in-out;
+}
+
+.tgc-y__num-up, .tgc-y__num-down {
+    opacity: 0;
 }

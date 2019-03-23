@@ -1,6 +1,7 @@
 import Line from './line';
 import { interpolate, InterpolationFunction } from './utils';
 import Brush, { BrushChangeEvent } from './brush';
+import YAxis from './y-axis';
 import Monitor from './monitor';
 import render from './render';
 
@@ -45,6 +46,8 @@ export default class Chart {
 
     brush: Brush;
 
+    yAxis: YAxis;
+
     get title() {
         const { title } = this.options;
         return title || `Unnamed Chart`;
@@ -73,15 +76,18 @@ export default class Chart {
         this.container.classList.add('tgc-chart');
         this.container.innerHTML = `
             <div class="tgc-chart__title">${ this.title }</div>
-            <div class="tgc-lines"></div>
+            <div class="tgc-viewport">
+                <div class="tgc-lines"></div>
+            </div>
         `;
 
         const monitor = new Monitor({});
         monitor.appendTo(this.container);
 
         const linesContainer = this.container.querySelector('.tgc-lines');
+        const viewportContainer = this.container.querySelector('.tgc-viewport');
 
-        if (linesContainer === null) {
+        if (linesContainer === null || viewportContainer === null) {
             throw new Error(`Something went wrong`);
         }
 
@@ -124,7 +130,12 @@ export default class Chart {
             monitor
         });
 
+        this.yAxis = new YAxis({
+            chart: this
+        });
+
         this.brush.appendTo(this.container);
+        this.yAxis.appendTo(viewportContainer);
 
         this.brush.on('change', this.handleWindowChange.bind(this));
 
@@ -133,8 +144,9 @@ export default class Chart {
     }
 
     handleWindowChange(event: BrushChangeEvent) {
-        this.lines.forEach(line => 
-            render(() => line.render())
+        const max = this.getCurrentMax();
+        this.lines.forEach(line=> 
+            render('line ' + line.name, () => line.render())
         );
     }
 
@@ -153,6 +165,10 @@ export default class Chart {
 
     getCurrentMax() {
         return Math.max(...this.lines.map(line => line.getCurrentMax()));
+    }
+
+    getCurrentMaxExact() {
+        return Math.max(...this.lines.map(line => line.getCurrentMaxExact()));
     }
 
     getCurrentMin() {

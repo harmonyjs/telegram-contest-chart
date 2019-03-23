@@ -85,9 +85,9 @@ export default class Brush extends EventEmitter {
         this.window = [
             // animation({ from: 1.9, to: 1.9, seconds: 0 }), 
             // 1.5
-            animation({ from: 1, to: 1, seconds: 0 }), 
-            animation({ from: 3, to: 3, seconds: 0 }),
-            2
+            animation({ from: 3.9, to: 3.9, seconds: 0 }), 
+            animation({ from: 5.8, to: 5.8, seconds: 0 }),
+            1.9
         ];
 
         this.dataLength = options.dataLength;
@@ -169,7 +169,7 @@ export default class Brush extends EventEmitter {
 
         const { exact: { endAt, length } } = this.getWindow();
 
-        console.log('move', { length });
+        // console.log('move', { length });
 
         const { clientX, action, rect, brush } = this.brushWindowDnDSession;
 
@@ -234,7 +234,7 @@ export default class Brush extends EventEmitter {
         const { points, startTime } = options;
         const { startWith: startWithPrev, exact: { endAt, length } } = this.getWindow();
         const max = this.dataLength - 1;
-        console.log('updateStartWith', { length });
+        // console.log('updateStartWith', { length });
         const startWithNext = minmax(
             0,
             points,
@@ -254,7 +254,7 @@ export default class Brush extends EventEmitter {
     updateEndAt(options: UpdateBrushWindowValueOptions) {
         const { points, startTime } = options;
         const { endAt: endAtPrev, exact: { startWith, length } } = this.getWindow();
-        console.log('updateEndAt', { length });
+        // console.log('updateEndAt', { length });
         const max = this.dataLength - 1;
         const endAtNext = minmax(
             MINIMAL_POINTS_IN_VIEW,

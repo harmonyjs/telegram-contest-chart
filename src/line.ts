@@ -136,7 +136,7 @@ export default class Line {
         this.empty = false;
 
         if (this._maxValueAnimation || this.chart.brush.hasAnimation()) {
-            render(() => this.render());
+            render('line ' + this.name, () => this.render());
         }
     }
 
@@ -186,11 +186,13 @@ export default class Line {
         return min;
     }
 
-    getCurrentMax() {
+    getCurrentData() {
         const { startPointIndex, endPointIndex } = this.chart.brush.getWindow();
-        const data = this.data.slice(startPointIndex, endPointIndex + 1);
-        const max = Math.max(...data);
-        // console.log(data);
+        return this.data.slice(startPointIndex, endPointIndex + 1);
+    }
+
+    getCurrentMax() {
+        const max = this.getCurrentMaxExact();
         // console.log(toInt(startWith), toInt(startWith+numOfOperatingPoints));
         // console.log(max);
         if (this._prevMax && this._prevMax !== max) {
@@ -210,6 +212,12 @@ export default class Line {
         }
         this._prevMax = max;
         return max;
+    }
+
+    getCurrentMaxExact() {
+        const data = this.getCurrentData();
+        // console.log(data);
+        return Math.max(...data);
     }
 
     getCurrentMin() { // TODO
