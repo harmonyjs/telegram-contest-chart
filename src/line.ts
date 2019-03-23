@@ -2,6 +2,7 @@ import Chart from './chart';
 import Monitor from './monitor';
 import { toInt, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
 import render from './render';
+import { Y_AXIS_ANIMATION_DURATION, SHOULD_COUNT_EXTRA_POINT_IN_MAX } from './constants';
 
 export type LineOptions = {
     chart: Chart;
@@ -83,81 +84,60 @@ export default class Line {
             this.clear();
         }
 
-        ctx.imageSmoothingEnabled = false;
+        const interpolateY = interpolate(0, this.height);
+
+        const {
+            startWith, 
+            endAt,
+            length,
+            startPointIndex,
+            endPointIndex,
+            leftPad,
+            rightPad
+        } = (
+            isBrush ? this.chart.brush.getWholeWindow()
+                    : this.chart.brush.getWindow()
+        );
+
+        const max = isBrush ? this.chart.getMax() : this.chart.getCurrentMax();
+
+        const startWithFloor = Math.floor(startWith);
+        const pointsCeil = Math.ceil(length);
+
+        this.m.set('line' + isBrush, {
+            startWith: startWith, length,
+            leftPad,
+            rightPad,
+            startWithFloor: startWithFloor,
+            pointsCeil: pointsCeil
+        });
         
         ctx.lineWidth = 1;
 	    ctx.lineCap = 'round';
 
         ctx.beginPath();
-        ctx.moveTo(0,0);
 
-        const [from, numOfPoints] = (
-            isBrush ? [0, this.data.length]
-                    : this.chart.brush.getWindow()
-        );
-
-        const interpolateY = interpolate(0, this.height);
-
-        const max = isBrush ? this.chart.getMax() : this.chart.getCurrentMax();
-
-        const leftPad = from % 1;
-        const rightPad = numOfPoints % 1;
-
-        const startWith = Math.floor(from);
-        const points = Math.ceil(numOfPoints);
-
-        this.m.set('line' + isBrush, {
-            from, numOfPoints,
-            leftPad,
-            rightPad,
-            startWith,
-            points
-        });
-
-        if (isBrush) {
-            console.log('>', this.chart.interpolateX(1));
-            for (let i = 0; i < points; i++) {
-                const x = this.chart.interpolateX(i / (points - 1));
-                const y = interpolateY(data[i] / max);
-                if (!i) {
-                    ctx.moveTo(x, y);
-                }
-                ctx.lineTo(x, y);
-                ctx.arc(x, y, 4, 0, 2 * Math.PI);
-                // console.log({ x, y })
-            }
-            ctx.stroke();
-            return;
-        }
-
-        const pPlus2 = Math.ceil(numOfPoints) + 2;
-
-        const ax = [];
-        for (let i = 0; i < pPlus2; i++) {
-            // console.log({ i });
-            const pointNum = startWith + i;
-            const x = this.chart.interpolateX((i - leftPad) / (numOfPoints));
-            const y = interpolateY(data[pointNum] / max);
-            if (!i) {
+        for (
+            let index = startPointIndex, orderNum = 0; 
+            index <= endPointIndex; 
+            index++, orderNum++
+        ) {
+            const x = this.chart.interpolateX((orderNum - leftPad) / length);
+            const y = interpolateY(data[index] / max);
+            if (orderNum === 0) {
                 ctx.moveTo(x, y);
             }
             ctx.lineTo(x, y);
-            ax.push(x);
-            // ctx.arc(x, y, 2, 0, 2 * Math.PI);
-            // ctx.fillText(i+'('+pointNum+')', x, y - 16)
-            // console.log({ x, y })
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
         }
-
-        // console.log(ax);
         
         ctx.stroke();
         
         this.empty = false;
 
-        // if (this._maxValueAnimation) {
+        if (this._maxValueAnimation || this.chart.brush.hasAnimation()) {
             render(() => this.render());
-            // render(() => setTimeout(() => this.render(), 0));
-        // }
+        }
     }
 
     clear() {
@@ -207,14 +187,17 @@ export default class Line {
     }
 
     getCurrentMax() {
-        const [startWith, points] = this.chart.brush.getWindow();
-        const data = this.data.slice(toInt(startWith), toInt(startWith+points));
+        const { startPointIndex, endPointIndex } = this.chart.brush.getWindow();
+        const data = this.data.slice(startPointIndex, endPointIndex + 1);
         const max = Math.max(...data);
+        // console.log(data);
+        // console.log(toInt(startWith), toInt(startWith+numOfOperatingPoints));
+        // console.log(max);
         if (this._prevMax && this._prevMax !== max) {
             this._maxValueAnimation = animation({
                 from: this._prevMax, 
                 to: max, 
-                seconds: .33
+                seconds: Y_AXIS_ANIMATION_DURATION
             });
             this._prevMax = max;
         }
@@ -229,13 +212,13 @@ export default class Line {
         return max;
     }
 
-    getCurrentMin() {
+    getCurrentMin() { // TODO
         const { isBrush } = this.options;
         // if (typeof this._min === 'number') {
         //     return this._min;
         // }
-        const [startWith, points] = this.chart.brush.getWindow();
-        const min = Math.min(0, ...this.data.slice(toInt(startWith), toInt(points)));
+        const { startWith, exact: { length } } = this.chart.brush.getWindow();
+        const min = Math.min(0, ...this.data.slice(toInt(startWith), toInt(length)));
         // this._min = min;
         return min;
     }

@@ -5,26 +5,28 @@ let isRunning = false;
 let drawTasks: DrawTask[] = [];
 
 let last = 0;
+let i = 0;
+let j = 0;
 
 function loop() {
     isRunning = true;
     requestAnimationFrame((t)=> {
-        // if (t - last < 100) {
-        //     loop();
-        //     return;
-        // }
-        // last = t;
-        // console.log('raf', t);
-        // if (!drawTasks.length) {
-        //     isRunning = false;
-        //     return;
-        // }
+        if (t - last < 16) {
+            loop();
+            return;
+        }
+        last = t;
+        // console.log('raf', i++);
+        if (!drawTasks.length) {
+            isRunning = false;
+            return;
+        }
         const tasks = drawTasks;
         drawTasks = [];
         while(tasks.length) {
             const task = tasks.shift();
             if (task) {
-                // console.log('task fired');
+                // console.log('task fired', j++);
                 task();
             }
         }

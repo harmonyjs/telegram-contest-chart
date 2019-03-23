@@ -2,7 +2,7 @@ export type MonitorOptions = {
     
 };
 
-type InfoDataValue = string | number | Array<string | number>
+type InfoDataValue = string | number | Array<string | number> | {}
 
 type InfoDataObject = {
     [key: string]: InfoDataValue

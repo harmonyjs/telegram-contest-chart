@@ -12,6 +12,10 @@ export function toInt(n: number): number {
     return n | 0;
 }
 
+export function minmax(min: number, value: number, max: number): number {
+    return Math.min(Math.max(value, min), max);
+}
+
 export function easeInOutCubic(t: number): number { 
     return t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1 
 };
@@ -24,34 +28,44 @@ export type AnimationOptions = {
     from: number, 
     to: number, 
     seconds: number,
-    isLinear?: boolean
+    isLinear?: boolean,
+    startTime?: number
 };
 
-export type AnimationCallback = () => number;
+export type AnimationCallback = {
+    (): number;
+    to: number;
+    finished: boolean;
+}
 
 export function animation(options: AnimationOptions): AnimationCallback {
-    const { from, to, seconds, isLinear = false } = options;
-    const startTime = Date.now();
+    const { from, to, seconds, isLinear = false, startTime = Date.now() } = options;
     const duration = seconds * 1000;
     const endTime = startTime + duration;
     const delta = to - from;
     const easing = isLinear ? linear : easeInOutCubic;
-    let finished = false;
-    const getValue = function() {
-        if (finished) {
+    function getValue() {
+        if (delta === 0 || seconds === 0) {
+            getValue.finished = true;
+            return to;
+        }
+        if (getValue.finished) {
             return to;
         }
         const now = Date.now();
         const left = Math.max(0, endTime - now);
         const progress = easing((duration - left) / duration);
         if (progress === 1) {
-            finished = true;
+            getValue.finished = true;
             return to;
         }
-        // console.log({
-        //     now, left, progress, fn: easeInOutCubic(progress), delta, from
-        // });
-        return from + delta * progress;
+        return (
+            // Math.round((
+                from + delta * progress
+            // ) * 1000) / 1000
+        );
     };
+    getValue.to = to;
+    getValue.finished = false;
     return getValue;
 }
