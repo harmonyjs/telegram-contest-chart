@@ -75,3 +75,20 @@ export function animation(options: AnimationOptions): AnimationCallback {
     getValue.finished = false;
     return getValue;
 }
+
+export function handleEvent(event: MouseEvent | TouchEvent) {
+    if ((event as TouchEvent).changedTouches) {
+        const e = event as TouchEvent;
+        const touches = e.changedTouches;
+        const first = touches[0];
+        return {
+            clientX: first.clientX,
+            target: first.target
+        }
+    }
+    const e = event as MouseEvent;
+    return {
+        clientX: e.clientX,
+        target: e.target
+    }
+}

@@ -266,7 +266,7 @@ export default class Chart {
         // });
     }
 
-    handleMouseEnter() {
+    handleMouseEnter(e: MouseEvent | TouchEvent) {
         render('show popover', () => {
             this.popover.style.opacity = '1';
             this.chartCursor.style.opacity = '1';

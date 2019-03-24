@@ -1,7 +1,7 @@
 import Chart from './chart';
 import Line from './line';
 import Monitor from './monitor';
-import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
+import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction, handleEvent } from './utils';
 import EventEmitter, { Event } from './event-emitter';
 import { X_AXIS_ANIMATION_DURATION, BRUSH_WINDOW_DIRECTION, MINIMAL_POINTS_IN_VIEW, EXTRA_POINTS_ON_THE_LEFT, EXTRA_POINTS_ON_THE_RIGHT } from './constants';
 
@@ -130,9 +130,17 @@ export default class Brush extends EventEmitter {
         this.brushLeftHandle = brushLeftHandle as HTMLDivElement;
         this.brushRightHandle = brushRightHandle as HTMLDivElement;
 
-        window.addEventListener("mousedown", this.handleMouseDown.bind(this));
-        window.addEventListener("mousemove", this.handleMouseMove.bind(this));
-        window.addEventListener("mouseup", this.handleMouseUp.bind(this));
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
+
+        document.addEventListener("mousedown", this.handleMouseDown);
+        document.addEventListener("mousemove", this.handleMouseMove);
+        document.addEventListener("mouseup", this.handleMouseUp);
+
+        document.addEventListener("touchstart", this.handleMouseDown, true);
+        document.addEventListener("touchmove", this.handleMouseMove, true);
+        document.addEventListener("touchend", this.handleMouseUp, true);
     }
 
     getDataLength() { // TODO cache + dedup max =
@@ -163,18 +171,18 @@ export default class Brush extends EventEmitter {
         });
     }
 
-    handleMouseDown(event: MouseEvent) {
-        // TODO disable user select and drag n drop
-        const isClickOnBrushWindow = event.target === this.brushWindow;
-        const isClickOnLeftHandle = event.target === this.brushLeftHandle;
-        const isClickOnRightHandle = event.target === this.brushRightHandle;
+    handleMouseDown(event: MouseEvent | TouchEvent) {
+        const { target, clientX } = handleEvent(event);
+        const isClickOnBrushWindow = target === this.brushWindow;
+        const isClickOnLeftHandle = target === this.brushLeftHandle;
+        const isClickOnRightHandle = target === this.brushRightHandle;
         if (!isClickOnBrushWindow && !isClickOnRightHandle && !isClickOnLeftHandle) {
             return;
         }
         const rect = this.container.getBoundingClientRect();
         const brush = this.brushWindow.getBoundingClientRect();
         this.brushWindowDnDSession = {
-            clientX: event.clientX - rect.left,
+            clientX: clientX - rect.left,
             action: (
                 isClickOnRightHandle ? BRUSH_WINDOW_DIRECTION.RIGHT :
                  isClickOnLeftHandle ? BRUSH_WINDOW_DIRECTION.LEFT
@@ -190,15 +198,17 @@ export default class Brush extends EventEmitter {
             return;
         }
 
+        const { clientX: eventClientX } = handleEvent(event);
+
         const { exact: { endAt, length } } = this.getWindow();
 
         // console.log('move', { length });
 
         const { clientX, action, rect, brush } = this.brushWindowDnDSession;
 
-        const px = event.clientX - rect.left;
+        const px = eventClientX - rect.left;
         const points = this.interpolateWindowWidthToPoints(px / this.width);
-        const delta = event.clientX - rect.left - clientX;
+        const delta = eventClientX - rect.left - clientX;
 
         if (
             action === BRUSH_WINDOW_DIRECTION.LEFT
@@ -252,6 +262,10 @@ export default class Brush extends EventEmitter {
             ...this.getWindow(),
             windowWidth: this.windowWidth
         });
+    }
+
+    handleMouseUp() {
+        delete this.brushWindowDnDSession;
     }
 
     updateStartWith(options: UpdateBrushWindowValueOptions) {
@@ -320,10 +334,6 @@ export default class Brush extends EventEmitter {
             this.width - this.position
         ));
         this.brushWindow.style.width = `${this.windowWidth}px`;
-    }
-
-    handleMouseUp() {
-        delete this.brushWindowDnDSession;
     }
 
     getContainer() {
