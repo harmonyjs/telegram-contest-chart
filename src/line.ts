@@ -1,9 +1,7 @@
 import Chart from './chart';
 import Monitor from './monitor';
 import { toInt, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
-import render from './render';
 import { MAIN_LINE_WIDTH, BRUSH_LINE_WIDTH, Y_AXIS_ANIMATION_DURATION, SHOULD_COUNT_EXTRA_POINT_IN_MAX } from './constants';
-import EventEmitter from './event-emitter';
 
 export type LineOptions = {
     chart: Chart;
@@ -20,7 +18,7 @@ export type LineOptions = {
 
 let prevM = 0;
 
-export default class Line extends EventEmitter {
+export default class Line {
 
     chart: Chart;
 
@@ -49,8 +47,6 @@ export default class Line extends EventEmitter {
     _maxValueAnimation?: AnimationCallback;
 
     constructor(private options: LineOptions) {
-        super();
-
         this.chart = options.chart;
 
         this.name = options.name;

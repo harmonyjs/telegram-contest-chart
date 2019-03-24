@@ -50,6 +50,7 @@ canvas {
 .tgc-chart {
     display: flex;
     flex-direction: column;
+    flex: 1 0 100%;
     user-select: none;
 }
 
@@ -91,6 +92,7 @@ canvas {
     display: flex;
     flex-direction: column;
     flex: 1;
+    overflow: hidden;
 }
 
 .tgc-brush__lines {

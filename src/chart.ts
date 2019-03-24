@@ -4,7 +4,12 @@ import Brush, { BrushChangeEvent } from './brush';
 import YAxis from './y-axis';
 import Monitor from './monitor';
 import render from './render';
-import { LINE_TYPE, Y_AXIS_ANIMATION_DURATION } from './constants';
+import { LINE_TYPE, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
+
+export type Viewport = {
+    width: number,
+    height: number
+};
 
 export type ChartColumn = Array<string|number>;
 
@@ -22,7 +27,7 @@ export type ChartDataObject = {
 };
 
 export type ChartOptions = {
-    container: Element | null;
+    container: HTMLElement | null;
     data: ChartDataObject;
     title?: string;
     width?: number;
@@ -31,7 +36,7 @@ export type ChartOptions = {
 
 export default class Chart {
 
-    container: Element;
+    container: HTMLElement;
 
     data: ChartDataObject;
 
@@ -53,11 +58,6 @@ export default class Chart {
 
     private _prevMax?: number;
 
-    get title() {
-        const { title } = this.options;
-        return title || `Unnamed Chart`;
-    }
-
     constructor(private options: ChartOptions) {
         if (options.container === null) {
             throw new Error(`container options is mandatory`);
@@ -66,25 +66,27 @@ export default class Chart {
         this.data = options.data;
         this.context = [];
         this.width = options.width || this.getContainerWidth() || 0;
-        this.height = options.height || ((this.width * 0.5) | 0) || 0;
+        this.height = options.height || ((this.width * WIDTH_HEIGHT_RATIO) | 0) || 0;
         this.lines = [];
         this.brushLines = [];
 
         this.interpolateX = interpolate(0, this.width);
 
-    //     this.initialize();
-    // }
-
-    // initialize() {
         const { title } = this.options;
 
         this.container.classList.add('tgc-chart');
         this.container.innerHTML = `
-            <div class="tgc-chart__title">${ this.title }</div>
+            <div class="tgc-chart__title">${ title || `Unnamed Chart` }</div>
             <div class="tgc-viewport">
                 <div class="tgc-lines"></div>
             </div>
         `;
+        if (options.width) {
+            this.container.style.width = `${options.width}px`;
+        }
+        if (options.height) {
+            this.container.style.height = `${options.height}px`;
+        }
 
         const monitor = new Monitor({});
         // monitor.appendTo(this.container);
@@ -95,8 +97,26 @@ export default class Chart {
         if (linesContainer === null || viewportContainer === null) {
             throw new Error(`Something went wrong`);
         }
+        
+        // 
+        // Create brush and append to container
+        // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+        this.brush = new Brush({
+            chart: this,
+            monitor
+        });
+        this.brush.appendTo(this.container);
 
-        let dataLength = 0;
+        // 
+        // Get viewport size
+        // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+        const { top, left, right, bottom } = viewportContainer.getBoundingClientRect();
+        const viewport = {
+            width: (right - left) || this.width,
+            height: (bottom - top) || this.height
+        };
+        console.log('viewport',viewport);
+
 
         for (let i = 0; i < this.data.columns.length; i++) {
             const column = this.data.columns[i];
@@ -106,7 +126,6 @@ export default class Chart {
             const name = this.data.names[alias];
             const color = this.data.colors[alias];
             const data = new Int32Array(dataArray as number[]);
-            dataLength = Math.max(data.length, dataLength);
 
             const line = new Line({
                 chart: this,
@@ -114,13 +133,12 @@ export default class Chart {
                 name,
                 color,
                 data,
-                width: this.width,
-                height: this.height,
+                width: viewport.width,
+                height: viewport.height,
                 className: "tgc-lines__canvas",
                 isBrush: false,
                 monitor
             });
-            line.on('animation-end', this.handleLineAnimationEnd.bind(this));
             this.lines.push(line);
 
             const brushLine = new Line({
@@ -129,33 +147,25 @@ export default class Chart {
                 name,
                 color,
                 data,
-                width: this.width,
-                height: 50,  // TODO
+                width: viewport.width,
+                height: BRUSH_HEIGHT,
                 className: "tgc-brush__line",
                 isBrush: true,
                 monitor
             });
-            brushLine.on('animation-end', this.handleLineAnimationEnd.bind(this));
             this.brushLines.push(brushLine);
         }
 
         linesContainer.append(...this.lines.map(line => line.getContainer()));
 
-        this.brush = new Brush({
-            chart: this,
-            lines: this.brushLines,
-            dataLength,
-            monitor
-        });
+        this.brush.addLines(this.brushLines);
+        this.brush.on('change', this.handleWindowChange.bind(this));
 
         this.yAxis = new YAxis({
-            chart: this
+            chart: this,
+            viewport
         });
-
-        this.brush.appendTo(this.container);
         this.yAxis.appendTo(viewportContainer);
-
-        this.brush.on('change', this.handleWindowChange.bind(this));
 
         (window as any).render = this.handleWindowChange.bind(this);
 
@@ -173,11 +183,6 @@ export default class Chart {
 
     handleWindowChange() {
         console.log('handleWindowChange');
-        render('chart render', () => this.render());
-    }
-
-    handleLineAnimationEnd() {
-        console.log('handleLineAnimationEnd');
         render('chart render', () => this.render());
     }
 
@@ -203,8 +208,7 @@ export default class Chart {
             this._maxValueAnimation = animation({
                 from, 
                 to: max, 
-                seconds: Y_AXIS_ANIMATION_DURATION,
-                callback: this.handleLineAnimationEnd.bind(this)
+                seconds: Y_AXIS_ANIMATION_DURATION
             });
             this._prevMax = max;
             return this._maxValueAnimation();

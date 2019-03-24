@@ -1,10 +1,11 @@
-import Chart from './chart';
+import Chart, { Viewport } from './chart';
 import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
 import { Y_TICK_HEIGHT } from './constants';
 import render from './render';
 
 export type YAxisOptions = {
     chart: Chart;
+    viewport: Viewport;
 };
 
 enum TICK_PLACE {
@@ -19,6 +20,8 @@ export default class YAxis {
 
     container: HTMLDivElement;
 
+    viewport: Viewport;
+
     max: number;
     oneTick: number;
     numOfTicks: number;
@@ -32,19 +35,19 @@ export default class YAxis {
 
     constructor(private options: YAxisOptions) {
         this.chart = options.chart;
+        this.viewport = options.viewport;
 
         this.container = document.createElement("div");
         this.container.classList.add("tgc-y");
 
-        const height = this.chart.height;
         this.max = this.chart.getCurrentMax();
 
-        this.toHeight = interpolate(0, height);
+        this.toHeight = interpolate(0, this.viewport.height);
         this.toValue = interpolate(0, this.max);
 
         this.numOfTicks = 5;//Math.floor(height / Y_TICK_HEIGHT);
         this.oneTick = Math.floor(this.max / this.numOfTicks);
-        const tickHeight = height / this.numOfTicks;
+        const tickHeight = this.viewport.height / this.numOfTicks;
 
         let html = '';
         
@@ -71,7 +74,7 @@ export default class YAxis {
         let position = this.toHeight(index / this.numOfTicks);
         switch(place) {
             case TICK_PLACE.UP:
-                position = this.chart.height / 2 + position * 2;
+                position = position && (this.viewport.height / 2 + position * 2);
                 break;
             case TICK_PLACE.DOWN:
                 position = position / 2;
@@ -107,7 +110,7 @@ export default class YAxis {
                                : { current: TICK_PLACE.DOWN, up: TICK_PLACE.CURRENT, down: TICK_PLACE.UP }
         );
 
-        for (let i = 0; i < this.numOfTicks; i++) {
+        for (let i = 1; i < this.numOfTicks; i++) {
             const upEl = upTickEls[i] as HTMLDivElement;
             const downEl = downTickEls[i] as HTMLDivElement;
             const currentEl = tickEls[i] as HTMLDivElement;
