@@ -27,7 +27,9 @@ canvas {
 }
 
 .chart {
+    min-width: 300px;
     width: 460px;
+    max-width: 460px;
     height: 380px;
     padding: 24px;
 }
@@ -123,7 +125,7 @@ canvas {
 }
 
 .tgc-brush__handle {
-    width: 15px;
+    width: 25px;
     display: block;
     content: ' ';
     position: absolute;
@@ -132,12 +134,12 @@ canvas {
 }
 
 .tgc-brush__handle-left {
-    transform: translateX(-10px);
+    transform: translateX(-15px);
     left: 0;
 }
 
 .tgc-brush__handle-right {
-    transform: translateX(10px);
+    transform: translateX(15px);
     right: 0;
 }
 
@@ -178,7 +180,9 @@ canvas {
 
 .tgc-legend {
     display: flex;
+    flex-wrap: wrap;
     margin-top: 12px;
+    overflow: hidden;
 }
 
 .tgc-legend__item {
@@ -244,6 +248,7 @@ canvas {
     position: relative;
     overflow: hidden;
     height: 20px;
+    margin-right: -16px;
 }
 
 .tgc-x__wrapper {
@@ -251,6 +256,8 @@ canvas {
 }
 
 .tgc-x__label {
+    color: rgba(0, 0, 0, .54);
+    line-height: 28px;
     position: absolute;
     top: 0;
     left: 0;
@@ -313,7 +320,7 @@ canvas {
 }
 
 .tgc-popover__value {
-    
+    min-width: 40px;
 }
 
 .tgc-popover__value + .tgc-popover__value {

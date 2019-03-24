@@ -1,11 +1,11 @@
 import Line from './line';
-import { minmax, interpolate, InterpolationFunction, animation, AnimationCallback } from './utils';
+import { humanNumber, minmax, interpolate, InterpolationFunction, animation, AnimationCallback } from './utils';
 import Brush, { BrushChangeEvent } from './brush';
 import YAxis from './y-axis';
 import XAxis from './x-axis';
 import Legend, { LegendChangeEvent } from './legend';
 import render from './render';
-import { X_TYPE, LINE_TYPE, CHART_PADDING, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
+import { X_TYPE, LINE_TYPE, CHART_PADDING, CHART_POINTS_PADDING_RIGHT, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
 
 export type Viewport = {
     width: number,
@@ -53,6 +53,7 @@ export default class Chart {
     height: number;
 
     interpolateX: InterpolationFunction;
+    interpolateXWithoutPadding: InterpolationFunction;
     
     lines: Line[];
     brushLines: Line[];
@@ -81,7 +82,8 @@ export default class Chart {
         self.lines = [];
         self.brushLines = [];
 
-        self.interpolateX = interpolate(0, self.width);
+        self.interpolateX = interpolate(0, self.width - CHART_POINTS_PADDING_RIGHT);
+        self.interpolateXWithoutPadding = interpolate(0, self.width);
 
         self.container.classList.add('tgc-chart');
         self.container.innerHTML = `
@@ -273,7 +275,7 @@ export default class Chart {
         render('move popover', () => {
             const { exact: { startWith, endAt, length } } = this.brush.getWindow();
             const int = interpolate(startWith, endAt);
-            const point = Math.round(int((e.clientX - this.viewportRect.left) / this.width));
+            const point = Math.round(int((e.clientX - this.viewportRect.left) / (this.width - CHART_POINTS_PADDING_RIGHT)));
             if (!this.xAxis.data[point]) {
                 return;
             }
@@ -291,7 +293,7 @@ export default class Chart {
             values.forEach(value => {
                 html += `
                     <div class="tgc-popover__value" style="color: ${value.color}">
-                        <div class="tgc-popover__number">${value.value}</div>
+                        <div class="tgc-popover__number">${humanNumber(value.value)}</div>
                         <div class="tgc-popover__name">${value.name}</div>
                     </div>
                 `;

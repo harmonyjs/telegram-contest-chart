@@ -92,3 +92,15 @@ export function handleEvent(event: MouseEvent | TouchEvent) {
         target: e.target
     }
 }
+
+export function round(num: number, d: number = 10): number {
+    return Math.round(num * d) / d;
+}
+
+export function humanNumber(num: number): string | number {
+  if (num >= 1000000)
+    return round(num/1000000) + 'M';
+  if (num >= 1000)
+    return round(num/1000)+'K';
+  return round(num);
+}

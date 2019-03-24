@@ -1,6 +1,6 @@
 import Chart from './chart';
 import { toInt, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
-import { MAIN_LINE_WIDTH, BRUSH_LINE_WIDTH, Y_AXIS_ANIMATION_DURATION, SHOULD_COUNT_EXTRA_POINT_IN_MAX } from './constants';
+import { MAIN_LINE_WIDTH, BRUSH_LINE_WIDTH, CHART_POINTS_PADDING_TOP } from './constants';
 
 export type LineOptions = {
     chart: Chart;
@@ -59,7 +59,7 @@ export default class Line {
         this.width = options.width;
         this.height = options.height;
         
-        this.interpolateY = interpolate(0, this.height);
+        this.interpolateY = interpolate(0, this.height - CHART_POINTS_PADDING_TOP);
 
         this.container = document.createElement("div");
 
@@ -114,8 +114,7 @@ export default class Line {
                     : this.chart.brush.getWindow()
         );
 
-        const startWithFloor = Math.floor(startWith);
-        const pointsCeil = Math.ceil(length);
+        const interpolateX = isBrush ? this.chart.interpolateXWithoutPadding : this.chart.interpolateX;
 
         const lineWidth = isBrush ? BRUSH_LINE_WIDTH : MAIN_LINE_WIDTH;
         
@@ -132,7 +131,7 @@ export default class Line {
             index <= endPointIndex; 
             index++, orderNum++
         ) {
-            const x = this.chart.interpolateX((orderNum - leftPad) / length);
+            const x = interpolateX((orderNum - leftPad) / length);
             const y = this.interpolateY(data[index] / max);
             if (orderNum === 0) {
                 ctx.moveTo(x, y);

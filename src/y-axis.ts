@@ -1,6 +1,6 @@
 import Chart, { Viewport } from './chart';
 import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
-import { Y_TICK_HEIGHT } from './constants';
+import { CHART_POINTS_PADDING_TOP } from './constants';
 import render from './render';
 
 export type YAxisOptions = {
@@ -42,7 +42,7 @@ export default class YAxis {
 
         this.max = this.chart.getCurrentMax();
 
-        this.toHeight = interpolate(0, this.viewport.height);
+        this.toHeight = interpolate(0, this.viewport.height - CHART_POINTS_PADDING_TOP);
         this.toValue = interpolate(0, this.max);
 
         this.numOfTicks = 5;//Math.floor(height / Y_TICK_HEIGHT);
@@ -52,7 +52,7 @@ export default class YAxis {
         let html = '';
         
         for (let i = 0; i < this.numOfTicks; i++) {
-            const value = this.oneTick * i;
+            const value = (this.oneTick * i).toLocaleString();
             html += `<div class="tgc-y__num tgc-y__num-up" style="transform: translateY(-${this.getTickPosition(i, TICK_PLACE.UP)}px)"></div>`;
             html += `<div class="tgc-y__num tgc-y__num-current" style="transform: translateY(-${this.getTickPosition(i, TICK_PLACE.CURRENT)}px)">${value}</div>`;
             html += `<div class="tgc-y__num tgc-y__num-down" style="transform: translateY(-${this.getTickPosition(i, TICK_PLACE.DOWN)}px)"></div>`;
@@ -115,14 +115,14 @@ export default class YAxis {
             const upEl = upTickEls[i] as HTMLDivElement;
             const downEl = downTickEls[i] as HTMLDivElement;
             const currentEl = tickEls[i] as HTMLDivElement;
-            const value = this.oneTick * i;
+            const value = (this.oneTick * i).toLocaleString();
 
             if (nextPosition.up === TICK_PLACE.CURRENT) {
-                upEl.innerHTML = String(value);
+                upEl.innerHTML = value;
             }
 
             if (nextPosition.down === TICK_PLACE.CURRENT) {
-                downEl.innerHTML = String(value);
+                downEl.innerHTML = value;
             }
 
             currentEl.style.transform = `translateY(-${this.getTickPosition(i, nextPosition.current)}px)`;

@@ -2,7 +2,7 @@ import Chart from './chart';
 import Line from './line';
 import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction, handleEvent } from './utils';
 import EventEmitter, { Event } from './event-emitter';
-import { X_AXIS_ANIMATION_DURATION, BRUSH_WINDOW_DIRECTION, MINIMAL_POINTS_IN_VIEW, EXTRA_POINTS_ON_THE_LEFT, EXTRA_POINTS_ON_THE_RIGHT } from './constants';
+import { X_AXIS_ANIMATION_DURATION, BRUSH_WINDOW_DIRECTION, MINIMAL_POINTS_IN_VIEW, INITIAL_BRUSH_SIZE } from './constants';
 import render from './render';
 
 export interface BrushChangeEvent extends Event {
@@ -139,7 +139,7 @@ export default class Brush extends EventEmitter {
         this.lines.push(...lines);
 
         const maxIndex = this.getMaxDataIndex();
-        const quarter = Math.round(maxIndex * 0.75);
+        const quarter = Math.round(maxIndex * INITIAL_BRUSH_SIZE);
 
         this.brushLinesContainer.append(...lines.map(line => line.getContainer()));
         this.interpolateWindowWidthToPoints = interpolate(0, maxIndex);
