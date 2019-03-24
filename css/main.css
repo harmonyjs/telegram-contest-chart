@@ -232,3 +232,21 @@ canvas {
     line-height: 24px;
     padding: 0 10px;
 }
+
+.tgc-x {
+    position: relative;
+    overflow: hidden;
+    height: 20px;
+}
+
+.tgc-x__wrapper {
+    transition: transform .12s linear;
+}
+
+.tgc-x__label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 1;
+    transition: transform .1s linear, opacity 1s linear;
+}

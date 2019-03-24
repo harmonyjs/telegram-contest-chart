@@ -8,7 +8,7 @@ export type LineOptions = {
     alias: string;
     name: string;
     color: string;
-    data: Int32Array;
+    data: Array<number>;
     width: number;
     height: number;
     isBrush: boolean;
@@ -27,7 +27,7 @@ export default class Line {
 
     name: string;
     alias: string;
-    data: Int32Array;
+    data: Array<number>;//Int32Array;
 
     private _prevMax?: number;
 
@@ -144,7 +144,7 @@ export default class Line {
                 ctx.moveTo(x, y);
             }
             ctx.lineTo(x, y);
-            // ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
         }
         
         ctx.stroke();

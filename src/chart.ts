@@ -2,10 +2,11 @@ import Line from './line';
 import { interpolate, InterpolationFunction, animation, AnimationCallback } from './utils';
 import Brush, { BrushChangeEvent } from './brush';
 import YAxis from './y-axis';
+import XAxis from './x-axis';
 import Legend, { LegendChangeEvent } from './legend';
 import Monitor from './monitor';
 import render from './render';
-import { LINE_TYPE, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
+import { X_TYPE, LINE_TYPE, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
 
 export type Viewport = {
     width: number,
@@ -53,6 +54,7 @@ export default class Chart {
 
     brush: Brush;
     yAxis: YAxis;
+    xAxis: XAxis;
     legend: Legend;
 
     _maxValueAnimation?: AnimationCallback;
@@ -94,12 +96,13 @@ export default class Chart {
         const monitor = new Monitor({});
         // monitor.appendTo(this.container);
 
-        const linesContainer = this.container.querySelector('.tgc-lines');
-        const viewportContainer = this.container.querySelector('.tgc-viewport');
+        const linesContainer = this.container.querySelector('.tgc-lines') as HTMLElement;
+        const viewportContainer = this.container.querySelector('.tgc-viewport') as HTMLElement;
 
         if (linesContainer === null || viewportContainer === null) {
             throw new Error(`Something went wrong`);
         }
+
         
         // 
         // Create brush and append to container
@@ -108,7 +111,13 @@ export default class Chart {
             chart: this,
             monitor
         });
-        this.brush.appendTo(this.container);
+
+        // 
+        // X Axis
+        // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+        this.xAxis = new XAxis({
+            chart: this
+        });
 
         // 
         // Legend
@@ -116,8 +125,13 @@ export default class Chart {
         this.legend = new Legend({
             data: this.data
         });
-        this.legend.appendTo(this.container);
         this.legend.on('change', this.handleLegendChange.bind(this));
+
+
+        this.xAxis.appendTo(this.container);
+        this.brush.appendTo(this.container);
+        this.legend.appendTo(this.container);
+
 
         // 
         // Get viewport size
@@ -127,19 +141,34 @@ export default class Chart {
             width: (right - left) || this.width,
             height: (bottom - top) || this.height
         };
-        console.log('viewport',viewport);
 
+
+        
+
+
+        viewportContainer.addEventListener('mousemove', (e) => {
+            const { exact: { startWith, endAt } } = this.brush.getWindow();
+            const int = interpolate(startWith, endAt);
+            console.log(Math.round(int((e.clientX - left) / this.width)))
+        });
+
+
+
+        let xData: number[] = [];
 
         for (let i = 0; i < this.data.columns.length; i++) {
             const column = this.data.columns[i];
             const [alias, ...dataArray] = column;
+            const data = dataArray as number[]; //new Int32Array(dataArray as number[]);
             const type = this.data.types[alias];
-            if (type !== LINE_TYPE) continue;
+            if (type === X_TYPE) {
+                xData = data;
+                continue;
+            }
             const name = this.data.names[alias];
             const color = this.data.colors[alias];
-            const data = new Int32Array(dataArray as number[]);
 
-            const line = new Line({
+            const options = {
                 chart: this,
                 alias: alias as string,
                 name,
@@ -150,25 +179,23 @@ export default class Chart {
                 className: "tgc-line",
                 isBrush: false,
                 monitor
-            });
+            };
+
+            const line = new Line(options);
             this.lines.push(line);
 
             const brushLine = new Line({
-                chart: this,
-                alias: alias as string,
-                name,
-                color,
-                data,
-                width: viewport.width,
+                ...options,
                 height: BRUSH_HEIGHT,
                 className: "tgc-brush__line",
-                isBrush: true,
-                monitor
+                isBrush: true
             });
             this.brushLines.push(brushLine);
         }
 
         linesContainer.append(...this.lines.map(line => line.getContainer()));
+
+        this.xAxis.addData(xData);
 
         this.brush.addLines(this.brushLines);
         this.brush.on('change', this.handleWindowChange.bind(this));
@@ -186,6 +213,7 @@ export default class Chart {
 
         this.lines.forEach(line => line.render());
         this.brushLines.forEach(line => line.render());
+        this.xAxis.render();
     }
 
     render(recursive: boolean = false) {
