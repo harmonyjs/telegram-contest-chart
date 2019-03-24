@@ -1,6 +1,5 @@
 import Chart from './chart';
 import Line from './line';
-import Monitor from './monitor';
 import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction, handleEvent } from './utils';
 import EventEmitter, { Event } from './event-emitter';
 import { X_AXIS_ANIMATION_DURATION, BRUSH_WINDOW_DIRECTION, MINIMAL_POINTS_IN_VIEW, EXTRA_POINTS_ON_THE_LEFT, EXTRA_POINTS_ON_THE_RIGHT } from './constants';
@@ -28,7 +27,6 @@ export type BrushWindowObject = {
 
 export type BrushOptions = {
     chart: Chart;
-    monitor: Monitor;
 };
 
 type brushWindowDnDSession = {
@@ -65,15 +63,11 @@ export default class Brush extends EventEmitter {
     windowWidth: number;
     minimalWindowWidth: number;
 
-    m: Monitor;
-
     interpolatePointsToWindowWidth: InterpolationFunction;
     interpolateWindowWidthToPoints: InterpolationFunction;
 
     constructor(private options: BrushOptions) {
         super();
-
-        this.m = options.monitor;
 
         this.chart = options.chart;
 
@@ -92,14 +86,6 @@ export default class Brush extends EventEmitter {
         this.width = 0;
         this.windowWidth = 0;
         this.minimalWindowWidth = 0
-
-        this.m.set('brush', {
-            ...this.getWindow(),
-            // dataLength: this.dataLength,
-            position: this.position,
-            width: this.width,
-            windowWidth: this.windowWidth,
-        });
 
         this.interpolatePointsToWindowWidth = () => 0;
         this.interpolateWindowWidthToPoints = () => 0;
@@ -165,10 +151,6 @@ export default class Brush extends EventEmitter {
         this.brushWindow.style.width = `${this.windowWidth}px`;
         this.position = this.interpolatePointsToWindowWidth(startWith / maxIndex);
         this.brushWindow.style.transform = `translateX(${this.position}px)`;
-        this.m.set('brush', {
-            width: this.width,
-            windowWidth: this.windowWidth
-        });
     }
 
     handleMouseDown(event: MouseEvent | TouchEvent) {
@@ -256,11 +238,6 @@ export default class Brush extends EventEmitter {
             window: this.window,
             position: this.position,
             action
-        });
-        
-        this.m.set('brush', {
-            ...this.getWindow(),
-            windowWidth: this.windowWidth
         });
     }
 

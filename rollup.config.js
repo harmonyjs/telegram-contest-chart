@@ -1,14 +1,31 @@
 import typescript from "rollup-plugin-typescript2";
+import { uglify } from "rollup-plugin-uglify";
 
-export default {
-    input: "src/index.ts",
+const plugins = [
+    typescript({
+        typescript: require("typescript")
+    }),
+    uglify({
+        compress: {
+            passes: 2
+        },
+        toplevel: false
+    })
+];
+
+export default [{
+    input: "src/chart.ts",
     output: {
-        file: "dist/index.js",
+        name: 'Chart',
+        file: "dist/chart.js",
         format: "iife"
     },
-    plugins: [
-        typescript({
-            typescript: require("typescript")
-        })
-    ]
-};
+    plugins 
+}, {
+    input: "src/data.json.js",
+    output: {
+        name: '_data_',
+        file: "dist/data.json.js",
+        format: "iife"
+    }
+}];

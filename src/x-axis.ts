@@ -57,7 +57,7 @@ export default class XAxis {
         const windowShift = this.chart.interpolateX(startWith / (length));
         const items = Array.from(this.container.querySelectorAll('.tgc-x__label'));
 
-        const LABEL_WIDTH = 100;
+        const LABEL_WIDTH = 70;
         const VISIBLE_ITEMS = Math.floor(this.chart.width / LABEL_WIDTH);
 
         const inWindow: {[n: string]: boolean} = {};

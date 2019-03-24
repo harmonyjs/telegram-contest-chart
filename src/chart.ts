@@ -4,7 +4,6 @@ import Brush, { BrushChangeEvent } from './brush';
 import YAxis from './y-axis';
 import XAxis from './x-axis';
 import Legend, { LegendChangeEvent } from './legend';
-import Monitor from './monitor';
 import render from './render';
 import { X_TYPE, LINE_TYPE, CHART_PADDING, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
 
@@ -120,10 +119,6 @@ export default class Chart {
         this.popoverValues = this.find('.tgc-popover__values');
         this.chartCursor = this.find('.tgc-cursor');
 
-
-        const monitor = new Monitor({});
-        // monitor.appendTo(this.container);
-
         const linesContainer = this.find('.tgc-lines');
         const viewportContainer = this.find('.tgc-viewport');
 
@@ -146,8 +141,7 @@ export default class Chart {
         // Create brush and append to container
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
         this.brush = new Brush({
-            chart: this,
-            monitor
+            chart: this
         });
 
         // 
@@ -199,8 +193,7 @@ export default class Chart {
                 width: viewport.width,
                 height: viewport.height,
                 className: "tgc-line",
-                isBrush: false,
-                monitor
+                isBrush: false
             };
 
             const line = new Line(options);
@@ -277,6 +270,9 @@ export default class Chart {
         render('hide popover', () => {
             this.popover.style.opacity = '0';
             this.chartCursor.style.opacity = '0';
+            this.lines.forEach(line => {
+                line.hidePoint()
+            });
         });
     }
 
@@ -285,19 +281,23 @@ export default class Chart {
             const { exact: { startWith, endAt, length } } = this.brush.getWindow();
             const int = interpolate(startWith, endAt);
             const point = Math.round(int((e.clientX - this.viewportRect.left) / this.width));
+            if (!this.xAxis.data[point]) {
+                return;
+            }
             const dateString = this.xAxis.getDate(point);
             const values = this.lines.map(line => {
                 line.showPoint(point);
                 return {
                     name: line.name,
-                    value: line.data[point]
+                    value: line.data[point],
+                    color: line.color
                 }
             });
             this.popoverDate.innerHTML = dateString;
             let html = '';
             values.forEach(value => {
                 html += `
-                    <div class="tgc-popover__value">
+                    <div class="tgc-popover__value" style="color: ${value.color}">
                         <div class="tgc-popover__number">${value.value}</div>
                         <div class="tgc-popover__name">${value.name}</div>
                     </div>

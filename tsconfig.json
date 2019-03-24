@@ -1,13 +1,11 @@
 {
     "compilerOptions": {
-        "target": "ES2016",
+        "target": "es5",
         "module": "ES6",
         "strict": true,
         "strictFunctionTypes": false,
         "baseUrl": ".",
         "outDir": "dist",
-        "declaration": true,
-        "declarationDir": "./dist",
         "lib": [
             "dom",
             "es6",

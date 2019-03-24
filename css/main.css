@@ -9,41 +9,26 @@ html {
     font-family: Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-/*
- * Remove text-shadow in selection highlight:
- * https://twitter.com/miketaylr/status/12228805301
- *
- * Vendor-prefixed and regular ::selection selectors cannot be combined:
- * https://stackoverflow.com/a/16982510/7133471
- */
-
-::-moz-selection {
-    background: #b3d4fc;
-    text-shadow: none;
-}
-
-::selection {
-    background: #b3d4fc;
-    text-shadow: none;
-}
-
 canvas {
     vertical-align: middle;
 }
-
 
 /* ==========================================================================
    Chart related styles
    ========================================================================== */
 
-.main {
-    padding: 12px;
+.dark {
+    background-color: #242F3E;
 }
 
-.tgc-chart__console {
-    margin: 48px 24px 0;
-    border: 1px rgba(0, 0, 0, .12) solid;
-    border-radius: 4px;
+.main {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.chart {
+    width: 460px;
+    height: 380px;
     padding: 24px;
 }
 
@@ -59,6 +44,10 @@ canvas {
     font-size: 18px;
     line-height: 28px;
     font-weight: bold;
+}
+
+.dark .tgc-chart__title {
+    color: white;
 }
 
 .tgc-lines {
@@ -129,6 +118,9 @@ canvas {
     cursor: grab;
 }
 
+.dark .tgc-brush__window {
+    box-shadow: 0 0 0 3000px rgba(50, 50, 70, .4);
+}
 
 .tgc-brush__handle {
     width: 15px;
@@ -140,13 +132,11 @@ canvas {
 }
 
 .tgc-brush__handle-left {
-    background-color: rgba(200, 0, 0, .005);
     transform: translateX(-10px);
     left: 0;
 }
 
 .tgc-brush__handle-right {
-    background-color: rgba(0, 200, 0, .005);
     transform: translateX(10px);
     right: 0;
 }
@@ -174,7 +164,12 @@ canvas {
     border-bottom: 1px #eee solid;
     opacity: 1;
     transition: transform .33s linear, opacity .33s ease-in-out;
-    color: #c4c4c4;
+    color: rgba(0, 0, 0, .54);
+}
+
+.dark .tgc-y__num {
+    border-bottom: 1px rgba(255, 255, 255, .18) solid;
+    color: rgba(255, 255, 255, .25);
 }
 
 .tgc-y__num-up, .tgc-y__num-down {
@@ -195,6 +190,10 @@ canvas {
     box-sizing: border-box;
     cursor: pointer;
     margin-right: 8px;
+}
+
+.dark .tgc-legend__item {
+    border-color: rgba(255, 255, 255, .18);
 }
 
 .tgc-legend__icon {
@@ -219,6 +218,10 @@ canvas {
     background-color: white;
 }
 
+.dark .tgc-legend__icon:after {
+    background-color: #242F3E;
+}
+
 .tgc-legend__item[data-visible="true"] .tgc-legend__icon:after {
     background-color: transparent;
 }
@@ -231,6 +234,10 @@ canvas {
     font-size: 15px;
     line-height: 24px;
     padding: 0 10px;
+}
+
+.dark .tgc-legend__name {
+    color: white;
 }
 
 .tgc-x {
@@ -251,6 +258,10 @@ canvas {
     transition: transform .1s linear, opacity 1s linear;
 }
 
+.dark .tgc-x__label {
+    color: rgba(255, 255, 255, .25);
+}
+
 .tgc-cursor {
     position: absolute;
     top: 0;
@@ -259,6 +270,10 @@ canvas {
     transition: transform .12s linear, opacity .12s linear;
     z-index: -2;
     opacity: 0;
+}
+
+.dark .tgc-cursor {
+    border-color: rgba(255, 255, 255, .18);
 }
 
 .tgc-popover {
@@ -273,15 +288,23 @@ canvas {
 
     display: flex;
     flex-direction: column;
-    
+
     opacity: 0;
 
     transition: transform .12s linear, opacity .12s linear;
 }
 
+.dark .tgc-popover {
+    background-color: #253241;
+}
+
 .tgc-popover__date {
     padding: 4px 12px;
     font-size: 15px;
+}
+
+.dark .tgc-popover__date {
+    color: white;
 }
 
 .tgc-popover__values {
@@ -305,4 +328,17 @@ canvas {
 .tgc-popover__name {
     font-size: 13px;
     
+}
+
+.switch-theme {
+    padding: 12px;
+    border: 1px rgba(125, 125, 125, .5) solid;
+    border-radius: 4px;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.dark .switch-theme {
+    color: white;
 }

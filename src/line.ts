@@ -1,5 +1,4 @@
 import Chart from './chart';
-import Monitor from './monitor';
 import { toInt, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
 import { MAIN_LINE_WIDTH, BRUSH_LINE_WIDTH, Y_AXIS_ANIMATION_DURATION, SHOULD_COUNT_EXTRA_POINT_IN_MAX } from './constants';
 
@@ -13,10 +12,9 @@ export type LineOptions = {
     height: number;
     isBrush: boolean;
     className?: string;
-    monitor: Monitor;
 };
 
-let prevM = 0;
+declare const isDarkMode: boolean;
 
 export default class Line {
 
@@ -26,6 +24,7 @@ export default class Line {
     canvas: HTMLCanvasElement;
 
     name: string;
+    color: string;
     alias: string;
     data: Array<number>;//Int32Array;
 
@@ -38,8 +37,6 @@ export default class Line {
 
     width: number;
     height: number;
-
-    m: Monitor;
     
     empty: boolean;
     visible: boolean;
@@ -54,14 +51,13 @@ export default class Line {
         this.chart = options.chart;
 
         this.name = options.name;
+        this.color = options.color;
         this.alias = options.alias;
 
         this.data = options.data;
 
         this.width = options.width;
         this.height = options.height;
-
-        this.m = options.monitor;
         
         this.interpolateY = interpolate(0, this.height);
 
@@ -121,14 +117,6 @@ export default class Line {
         const startWithFloor = Math.floor(startWith);
         const pointsCeil = Math.ceil(length);
 
-        // this.m.set('line' + isBrush, {
-        //     startWith: startWith, length,
-        //     leftPad,
-        //     rightPad,
-        //     startWithFloor: startWithFloor,
-        //     pointsCeil: pointsCeil
-        // });
-
         const lineWidth = isBrush ? BRUSH_LINE_WIDTH : MAIN_LINE_WIDTH;
         
         ctx.strokeStyle = color;
@@ -161,7 +149,7 @@ export default class Line {
         if (selectedPointCoords) {
             const { x, y } = selectedPointCoords;
             ctx.beginPath();
-            ctx.fillStyle = "#ffffff";
+            ctx.fillStyle = isDarkMode ? "#242F3E" : "#ffffff";
             ctx.arc(x, y, 5, 0, 2 * Math.PI);
             ctx.moveTo(x, y);
             ctx.fill();
@@ -177,6 +165,11 @@ export default class Line {
 
     showPoint(point: number) {
         this.selectedPoint = point;
+        this.render();
+    }
+
+    hidePoint() {
+        delete this.selectedPoint;
         this.render();
     }
 
