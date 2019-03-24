@@ -1,12 +1,12 @@
 import Line from './line';
-import { interpolate, InterpolationFunction, animation, AnimationCallback } from './utils';
+import { minmax, interpolate, InterpolationFunction, animation, AnimationCallback } from './utils';
 import Brush, { BrushChangeEvent } from './brush';
 import YAxis from './y-axis';
 import XAxis from './x-axis';
 import Legend, { LegendChangeEvent } from './legend';
 import Monitor from './monitor';
 import render from './render';
-import { X_TYPE, LINE_TYPE, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
+import { X_TYPE, LINE_TYPE, CHART_PADDING, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
 
 export type Viewport = {
     width: number,
@@ -39,6 +39,12 @@ export type ChartOptions = {
 export default class Chart {
 
     container: HTMLElement;
+    popover: HTMLElement;
+    popoverDate: HTMLElement;
+    popoverValues: HTMLElement;
+    chartCursor: HTMLElement;
+
+    viewportRect: DOMRect | ClientRect;
 
     data: ChartDataObject;
 
@@ -84,8 +90,23 @@ export default class Chart {
             <div class="tgc-chart__title">${ title || `Unnamed Chart` }</div>
             <div class="tgc-viewport">
                 <div class="tgc-lines"></div>
+                <div class="tgc-cursor"></div>
+                <div class="tgc-popover">
+                    <div class="tgc-popover__date">Sat, Feb 24</div>
+                    <div class="tgc-popover__values">
+                        <div class="tgc-popover__value">
+                            <div class="tgc-popover__number">167</div>
+                            <div class="tgc-popover__name">Joined</div>
+                        </div>
+                        <div class="tgc-popover__value">
+                            <div class="tgc-popover__number">98</div>
+                            <div class="tgc-popover__name">Left</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
+
         if (options.width) {
             this.container.style.width = `${options.width}px`;
         }
@@ -93,15 +114,32 @@ export default class Chart {
             this.container.style.height = `${options.height}px`;
         }
 
+        
+        this.popover = this.find('.tgc-popover');
+        this.popoverDate = this.find('.tgc-popover__date');
+        this.popoverValues = this.find('.tgc-popover__values');
+        this.chartCursor = this.find('.tgc-cursor');
+
+
         const monitor = new Monitor({});
         // monitor.appendTo(this.container);
 
-        const linesContainer = this.container.querySelector('.tgc-lines') as HTMLElement;
-        const viewportContainer = this.container.querySelector('.tgc-viewport') as HTMLElement;
+        const linesContainer = this.find('.tgc-lines');
+        const viewportContainer = this.find('.tgc-viewport');
 
-        if (linesContainer === null || viewportContainer === null) {
-            throw new Error(`Something went wrong`);
-        }
+        // 
+        // Get viewport size
+        // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+        this.viewportRect = viewportContainer.getBoundingClientRect();
+        const { top, left, right, bottom } = this.viewportRect;
+        const viewport = {
+            width: (right - left) || this.width,
+            height: (bottom - top) || this.height
+        };
+
+        viewportContainer.addEventListener('mouseenter', this.handleMouseEnter.bind(this));
+        viewportContainer.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
+        viewportContainer.addEventListener('mousemove', this.handleMouseMove.bind(this));
 
         
         // 
@@ -133,28 +171,12 @@ export default class Chart {
         this.legend.appendTo(this.container);
 
 
-        // 
-        // Get viewport size
-        // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-        const { top, left, right, bottom } = viewportContainer.getBoundingClientRect();
-        const viewport = {
-            width: (right - left) || this.width,
-            height: (bottom - top) || this.height
-        };
 
-
+        let xData: number[] = [];
         
 
 
-        viewportContainer.addEventListener('mousemove', (e) => {
-            const { exact: { startWith, endAt } } = this.brush.getWindow();
-            const int = interpolate(startWith, endAt);
-            console.log(Math.round(int((e.clientX - left) / this.width)))
-        });
 
-
-
-        let xData: number[] = [];
 
         for (let i = 0; i < this.data.columns.length; i++) {
             const column = this.data.columns[i];
@@ -244,6 +266,57 @@ export default class Chart {
         // });
     }
 
+    handleMouseEnter() {
+        render('show popover', () => {
+            this.popover.style.opacity = '1';
+            this.chartCursor.style.opacity = '1';
+        });
+    }
+
+    handleMouseLeave() {
+        render('hide popover', () => {
+            this.popover.style.opacity = '0';
+            this.chartCursor.style.opacity = '0';
+        });
+    }
+
+    handleMouseMove(e: MouseEvent) {
+        render('move popover', () => {
+            const { exact: { startWith, endAt, length } } = this.brush.getWindow();
+            const int = interpolate(startWith, endAt);
+            const point = Math.round(int((e.clientX - this.viewportRect.left) / this.width));
+            const dateString = this.xAxis.getDate(point);
+            const values = this.lines.map(line => {
+                line.showPoint(point);
+                return {
+                    name: line.name,
+                    value: line.data[point]
+                }
+            });
+            this.popoverDate.innerHTML = dateString;
+            let html = '';
+            values.forEach(value => {
+                html += `
+                    <div class="tgc-popover__value">
+                        <div class="tgc-popover__number">${value.value}</div>
+                        <div class="tgc-popover__name">${value.name}</div>
+                    </div>
+                `;
+            });
+            this.popoverValues.innerHTML = html;
+
+            const px = this.interpolateX((point - startWith) / length);
+
+            const { left: popoverLeft, right: popoverRight } = this.popover.getBoundingClientRect();
+            const width = popoverRight - popoverLeft;
+            const half = width / 2;
+            const x = minmax(CHART_PADDING, px - half, this.width - width - CHART_PADDING);
+            this.popover.style.transform = `translateX(${x}px)`;
+
+            this.chartCursor.style.transform = `translateX(${Math.round(minmax(1, px, this.width - 1))}px)`
+        });
+    }
+
     getLine(lines: Line[], alias: string) {
         const line = lines.find(line => line.alias === alias);
         if (!line) {
@@ -317,6 +390,14 @@ export default class Chart {
 
     getCurrentMin() {
         return Math.min(...this.lines.map(line => line.getCurrentMin()));
+    }
+
+    find(selector: string): HTMLElement {
+        const el = this.container.querySelector(selector) as HTMLElement;
+        if (el === null) {
+            throw new Error('Something went wrong');
+        }
+        return el;
     }
 
 }

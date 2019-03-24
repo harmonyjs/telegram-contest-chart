@@ -250,3 +250,59 @@ canvas {
     opacity: 1;
     transition: transform .1s linear, opacity 1s linear;
 }
+
+.tgc-cursor {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px #ccc solid;
+    transition: transform .12s linear, opacity .12s linear;
+    z-index: -2;
+    opacity: 0;
+}
+
+.tgc-popover {
+    position: absolute;
+    top: 24px;
+    left: 0;
+    /* width: 150px; */
+    /* height: 90px; */
+    border-radius: 6px;
+    background-color: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+
+    display: flex;
+    flex-direction: column;
+    
+    opacity: 0;
+
+    transition: transform .12s linear, opacity .12s linear;
+}
+
+.tgc-popover__date {
+    padding: 4px 12px;
+    font-size: 15px;
+}
+
+.tgc-popover__values {
+    display: flex;
+    padding: 0 12px 4px;
+}
+
+.tgc-popover__value {
+    
+}
+
+.tgc-popover__value + .tgc-popover__value {
+    margin-left: 12px;
+}   
+
+.tgc-popover__number {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.tgc-popover__name {
+    font-size: 13px;
+    
+}

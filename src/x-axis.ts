@@ -1,6 +1,6 @@
 import Chart, { Viewport } from './chart';
 import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
-import { Y_TICK_HEIGHT, BRUSH_WINDOW_DIRECTION } from './constants';
+import { Y_TICK_HEIGHT, BRUSH_WINDOW_DIRECTION, X_TYPE } from './constants';
 import render from './render';
 import { BrushChangeEvent } from './brush';
 
@@ -8,6 +8,7 @@ export type XAxisOptions = {
     chart: Chart;
 };
 
+const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thr', 'Fri', 'Sat'];
 const shortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default class XAxis {
@@ -32,6 +33,11 @@ export default class XAxis {
         this.chart.brush.on('change', this.handleBrushChange.bind(this));
 
     }
+    
+    getDate(point: number) {
+        const date = this.data[point];
+        return XAxis.shortDay(date) + ', ' + XAxis.shortMonth(date) + ' ' + date.getDate()
+    }
 
     handleBrushChange(event: BrushChangeEvent) {
         render('x-axis', () => {
@@ -47,7 +53,6 @@ export default class XAxis {
     }
 
     checkVisibility(): void {
-        console.log('----------- checkVisibility -------------------');
         const { exact: { startWith, length } } = this.chart.brush.getWindow();
         const windowShift = this.chart.interpolateX(startWith / (length));
         const items = Array.from(this.container.querySelectorAll('.tgc-x__label'));
@@ -79,7 +84,6 @@ export default class XAxis {
         }
 
         if (this.ratio < 0.5) {
-            console.log({visibleInWindow});
             const shown = this.showItems();
             return shown > 0 ? this.checkVisibility() : void 0;
         }
@@ -87,7 +91,6 @@ export default class XAxis {
     }
 
     showItems(): number {
-        console.log('showItems');
         const last = this.hidden.pop();
         if (!last) {
             return 0;
@@ -98,7 +101,6 @@ export default class XAxis {
     }
 
     hideItems(): number {
-        console.log('hideItems');
 
         const items = this.visible.slice(1, this.visible.length - 1);
 
@@ -116,10 +118,7 @@ export default class XAxis {
         
         this.hidden.push(hidden);
 
-        
-        console.log('hidden', this.hidden);
-        console.log('visible', this.visible);
-
+    
         return hidden.length;
     }
 
@@ -188,5 +187,9 @@ export default class XAxis {
 
     static shortMonth(date: Date) {
         return shortMonths[date.getMonth()];
+    }
+
+    static shortDay(date: Date) {
+        return shortDays[date.getDay()];
     }
 }

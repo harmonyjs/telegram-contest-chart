@@ -48,6 +48,8 @@ export default class Line {
 
     _maxValueAnimation?: AnimationCallback;
 
+    selectedPoint?: number;
+
     constructor(private options: LineOptions) {
         this.chart = options.chart;
 
@@ -126,12 +128,16 @@ export default class Line {
         //     startWithFloor: startWithFloor,
         //     pointsCeil: pointsCeil
         // });
+
+        const lineWidth = isBrush ? BRUSH_LINE_WIDTH : MAIN_LINE_WIDTH;
         
         ctx.strokeStyle = color;
-        ctx.lineWidth = isBrush ? BRUSH_LINE_WIDTH : MAIN_LINE_WIDTH;
+        ctx.lineWidth = lineWidth;
 	    ctx.lineCap = 'round';
 
         ctx.beginPath();
+
+        let selectedPointCoords;
 
         for (
             let index = startPointIndex, orderNum = 0; 
@@ -144,12 +150,34 @@ export default class Line {
                 ctx.moveTo(x, y);
             }
             ctx.lineTo(x, y);
-            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            if (this.selectedPoint === index) {
+                selectedPointCoords = { x, y };
+                
+            }
         }
         
         ctx.stroke();
+
+        if (selectedPointCoords) {
+            const { x, y } = selectedPointCoords;
+            ctx.beginPath();
+            ctx.fillStyle = "#ffffff";
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.moveTo(x, y);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.lineWidth = lineWidth;
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.moveTo(x, y);
+            ctx.stroke();
+        }
         
         this.empty = false;
+    }
+
+    showPoint(point: number) {
+        this.selectedPoint = point;
+        this.render();
     }
 
     show() {

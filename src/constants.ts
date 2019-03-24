@@ -14,6 +14,8 @@ export const BRUSH_LINE_WIDTH = 1;
 export const BRUSH_HEIGHT = 50; // look at corresponding value in css
 export const WIDTH_HEIGHT_RATIO = 0.5; // look at corresponding value in css
 
+export const CHART_PADDING = 12;
+
 export enum BRUSH_WINDOW_DIRECTION {
     LEFT = 1,
     RIGHT = -1,
