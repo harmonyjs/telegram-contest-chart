@@ -222,15 +222,6 @@ export default class Line {
         return max;
     }
 
-    getMin() {
-        if (typeof this._min === 'number') {
-            return this._min;
-        }
-        const min = Math.min(0, ...this.data);
-        this._min = min;
-        return min;
-    }
-
     getCurrentData() {
         const { startPointIndex, endPointIndex } = this.chart.brush.getWindow();
         return this.data.slice(startPointIndex, endPointIndex + 1);
@@ -242,17 +233,6 @@ export default class Line {
         }
         const data = this.getCurrentData();
         return Math.max(...data);
-    }
-
-    getCurrentMin() { // TODO
-        const { isBrush } = this.options;
-        // if (typeof this._min === 'number') {
-        //     return this._min;
-        // }
-        const { startWith, exact: { length } } = this.chart.brush.getWindow();
-        const min = Math.min(0, ...this.data.slice(toInt(startWith), toInt(length)));
-        // this._min = min;
-        return min;
     }
 
 }

@@ -7,7 +7,8 @@ const plugins = [
     }),
     uglify({
         compress: {
-            passes: 3
+            passes: 3,
+            unsafe: true
         },
         toplevel: false
     })

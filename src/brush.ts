@@ -1,6 +1,6 @@
 import Chart from './chart';
 import Line from './line';
-import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction, handleEvent } from './utils';
+import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction, handleEvent, transform, translateX, className, find } from './utils';
 import EventEmitter, { Event } from './event-emitter';
 import { X_AXIS_ANIMATION_DURATION, BRUSH_WINDOW_DIRECTION, MINIMAL_POINTS_IN_VIEW, INITIAL_BRUSH_SIZE } from './constants';
 import render from './render';
@@ -42,31 +42,33 @@ type UpdateBrushWindowValueOptions = {
     startTime?: number,
 };
 
+const zero = () => 0;
+
 export default class Brush extends EventEmitter {
 
     chart: Chart;
 
-    container: HTMLDivElement;
-    brushWindow: HTMLDivElement;
-    brushLeftHandle: HTMLDivElement;
-    brushRightHandle: HTMLDivElement;
-    brushLinesContainer: HTMLDivElement;
+    container: HTMLElement;
+    brushWindow: HTMLElement;
+    brushLeftHandle: HTMLElement;
+    brushRightHandle: HTMLElement;
+    brushLinesContainer: HTMLElement;
 
     brushWindowDnDSession?: brushWindowDnDSession;
 
     lines: Line[] = [];
 
     window: BrushWindow = [
-        (() => 0) as AnimationCallback, 
-        (() => 0) as AnimationCallback, 
+        (zero) as AnimationCallback, 
+        (zero) as AnimationCallback, 
         0
     ];
 
-    position: number;
+    position: number = 0;
 
-    width: number;
-    windowWidth: number;
-    minimalWindowWidth: number;
+    width: number = 0;
+    windowWidth: number = 0;
+    minimalWindowWidth: number = 0;
 
     interpolatePointsToWindowWidth: InterpolationFunction;
     interpolateWindowWidthToPoints: InterpolationFunction;
@@ -74,23 +76,17 @@ export default class Brush extends EventEmitter {
     constructor(private options: BrushOptions) {
         super();
 
-        this.chart = options.chart;
+        const self = this;
 
-        // this.dataLength = options.dataLength;
+        self.chart = options.chart;
 
-        this.position = 0;
+        self.interpolatePointsToWindowWidth = zero;
+        self.interpolateWindowWidthToPoints = zero;
 
-        this.width = 0;
-        this.windowWidth = 0;
-        this.minimalWindowWidth = 0
+        const container = self.container = document.createElement("div");
+        container.classList.add(className('brush'));
 
-        this.interpolatePointsToWindowWidth = () => 0;
-        this.interpolateWindowWidthToPoints = () => 0;
-
-        this.container = document.createElement("div");
-        this.container.classList.add("tgc-brush");
-
-        this.container.innerHTML = `
+        container.innerHTML = `
             <div class="tgc-brush__lines"></div>
             <div class="tgc-brush__window">
                 <div class="tgc-brush__handle tgc-brush__handle-left"></div>
@@ -98,35 +94,26 @@ export default class Brush extends EventEmitter {
             </div>
         `;
         
-        const brushLinesContainer = this.container.querySelector('.tgc-brush__lines');
-        const brushWindow = this.container.querySelector('.tgc-brush__window');
-        const brushLeftHandle = this.container.querySelector('.tgc-brush__handle-left');
-        const brushRightHandle = this.container.querySelector('.tgc-brush__handle-right');
+        self.brushLinesContainer = find(container, className('brush', 'lines'));
+        self.brushWindow = find(container, className('brush', 'window'));
+        self.brushLeftHandle = find(container, className('brush', 'handle', 'left'));
+        self.brushRightHandle = find(container, className('brush', 'handle', 'right'));
 
-        if (brushLinesContainer === null || brushWindow === null || brushLeftHandle === null || brushRightHandle === null) {
-            throw new Error(`Something went wrong`);
-        }
+        self.handleMouseDown = self.handleMouseDown.bind(self);
+        self.handleMouseMove = self.handleMouseMove.bind(self);
+        self.handleMouseUp = self.handleMouseUp.bind(self);
 
-        this.brushLinesContainer = brushLinesContainer as HTMLDivElement;
+        const documentAddEventListener = document.addEventListener.bind(document);
+        documentAddEventListener("mousedown", self.handleMouseDown);
+        documentAddEventListener("mousemove", self.handleMouseMove);
+        documentAddEventListener("mouseup", self.handleMouseUp);
 
-        this.brushWindow = brushWindow as HTMLDivElement;
-        this.brushLeftHandle = brushLeftHandle as HTMLDivElement;
-        this.brushRightHandle = brushRightHandle as HTMLDivElement;
-
-        this.handleMouseDown = this.handleMouseDown.bind(this);
-        this.handleMouseMove = this.handleMouseMove.bind(this);
-        this.handleMouseUp = this.handleMouseUp.bind(this);
-
-        document.addEventListener("mousedown", this.handleMouseDown);
-        document.addEventListener("mousemove", this.handleMouseMove);
-        document.addEventListener("mouseup", this.handleMouseUp);
-
-        document.addEventListener("touchstart", this.handleMouseDown, true);
-        document.addEventListener("touchmove", this.handleMouseMove, true);
-        document.addEventListener("touchend", this.handleMouseUp, true);
+        documentAddEventListener("touchstart", self.handleMouseDown, true);
+        documentAddEventListener("touchmove", self.handleMouseMove, true);
+        documentAddEventListener("touchend", self.handleMouseUp, true);
     }
 
-    getDataLength() { // TODO cache + dedup max =
+    getDataLength() {
         return Math.max(...this.lines.map(line => line.data.length));
     }
 
@@ -135,31 +122,32 @@ export default class Brush extends EventEmitter {
     }
 
     addLines(lines: Line[]) {
+        const self = this;
 
-        this.lines.push(...lines);
+        self.lines.push(...lines);
 
-        const maxIndex = this.getMaxDataIndex();
+        const maxIndex = self.getMaxDataIndex();
         const quarter = Math.round(maxIndex * INITIAL_BRUSH_SIZE);
 
-        this.brushLinesContainer.append(...lines.map(line => line.getContainer()));
-        this.interpolateWindowWidthToPoints = interpolate(0, maxIndex);
+        self.brushLinesContainer.append(...lines.map(line => line.getContainer()));
+        self.interpolateWindowWidthToPoints = interpolate(0, maxIndex);
         
-        this.window = [
+        self.window = [
             animation({ from: quarter, to: quarter, seconds: 0 }), 
             animation({ from: maxIndex, to: maxIndex, seconds: 0 }),
             maxIndex - quarter
         ];
 
         //
-        const { startWith, exact: { length } } = this.getWindow();
-        this.interpolatePointsToWindowWidth = interpolate(0, this.width);
-        this.minimalWindowWidth = MINIMAL_POINTS_IN_VIEW * this.interpolatePointsToWindowWidth(1/maxIndex);
-        this.windowWidth = this.interpolatePointsToWindowWidth(length / maxIndex);
-        this.brushWindow.style.width = `${this.windowWidth}px`;
-        this.position = this.interpolatePointsToWindowWidth(startWith / maxIndex);
-        this.brushWindow.style.transform = `translateX(${this.position}px)`;
+        const { startWith, exact: { length } } = self.getWindow();
+        self.interpolatePointsToWindowWidth = interpolate(0, self.width);
+        self.minimalWindowWidth = MINIMAL_POINTS_IN_VIEW * self.interpolatePointsToWindowWidth(1/maxIndex);
+        self.windowWidth = self.interpolatePointsToWindowWidth(length / maxIndex);
+        self.brushWindow.style.width = `${self.windowWidth}px`;
+        self.position = self.interpolatePointsToWindowWidth(startWith / maxIndex);
+        transform(self.brushWindow, translateX(self.position));
 
-        this.emit('change', {
+        self.emit('change', {
             window: this.window,
             position: this.position,
             action: BRUSH_WINDOW_DIRECTION.LEFT
@@ -189,69 +177,71 @@ export default class Brush extends EventEmitter {
     }
 
     handleMouseMove(event: MouseEvent) {
-        if (!this.brushWindowDnDSession) {
+        const self = this;
+        if (!self.brushWindowDnDSession) {
             return;
         }
 
         render('brush move', () => {
-            if (!this.brushWindowDnDSession) {
+
+            if (!self.brushWindowDnDSession) {
                 return;
             }
             const { clientX: eventClientX } = handleEvent(event);
 
-            const { exact: { endAt, length } } = this.getWindow();
+            const { exact: { endAt, length } } = self.getWindow();
 
-            const { clientX, action, rect, brush } = this.brushWindowDnDSession;
+            const { clientX, action, rect, brush } = self.brushWindowDnDSession;
 
             const px = eventClientX - rect.left;
-            const points = this.interpolateWindowWidthToPoints(px / this.width);
+            const points = self.interpolateWindowWidthToPoints(px / self.width);
             const delta = eventClientX - rect.left - clientX;
 
             if (
                 action === BRUSH_WINDOW_DIRECTION.LEFT
             ) {
-                this.updateStartWith({ 
+                self.updateStartWith({ 
                     points: Math.min(
                         points,
                         endAt - MINIMAL_POINTS_IN_VIEW
                     ) 
                 });
-                this.updatePosition();
-                this.updateWindowWidth();
+                self.updatePosition();
+                self.updateWindowWidth();
             }
             if (action === BRUSH_WINDOW_DIRECTION.MOVE) {
-                const startWith = this.interpolateWindowWidthToPoints((brush.left - rect.left + delta) / this.width);
-                const endAt = this.interpolateWindowWidthToPoints((brush.right - rect.left + delta) / this.width);
+                const startWith = self.interpolateWindowWidthToPoints((brush.left - rect.left + delta) / self.width);
+                const endAt = self.interpolateWindowWidthToPoints((brush.right - rect.left + delta) / self.width);
                 const startTime = Date.now();
                 if (delta < 0) {
-                    const startWithNext = this.updateStartWith({
+                    const startWithNext = self.updateStartWith({
                         points: startWith,
                         startTime
                     });
-                    this.updateEndAt({
+                    self.updateEndAt({
                         points: startWithNext + length,
                         startTime
                     });
                 } else {
-                    const endAtNext = this.updateEndAt({
+                    const endAtNext = self.updateEndAt({
                         points: endAt,
                         startTime
                     });
-                    this.updateStartWith({
+                    self.updateStartWith({
                         points: endAtNext - length,
                         startTime
                     });
                 }
-                this.updatePosition();
+                self.updatePosition();
             }
             if (action === BRUSH_WINDOW_DIRECTION.RIGHT) {
-                this.updateEndAt({ points });
-                this.updateWindowWidth();
+                self.updateEndAt({ points });
+                self.updateWindowWidth();
             }
             
-            this.emit('change', {
-                window: this.window,
-                position: this.position,
+            self.emit('change', {
+                window: self.window,
+                position: self.position,
                 action
             });
         });
@@ -308,7 +298,7 @@ export default class Brush extends EventEmitter {
     updatePosition() {
         const { exact: { startWith } } = this.getWindow();
         this.position = this.interpolatePointsToWindowWidth(startWith / this.getMaxDataIndex());
-        this.brushWindow.style.transform = `translateX(${this.position}px)`;
+        transform(this.brushWindow, translateX(this.position));
     }
 
     /**

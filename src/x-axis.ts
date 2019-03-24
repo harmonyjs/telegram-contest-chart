@@ -1,5 +1,5 @@
 import Chart, { Viewport } from './chart';
-import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction } from './utils';
+import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction, transform, translateX } from './utils';
 import { Y_TICK_HEIGHT, BRUSH_WINDOW_DIRECTION, X_TYPE } from './constants';
 import render from './render';
 import { BrushChangeEvent } from './brush';
@@ -136,7 +136,7 @@ export default class XAxis {
         const windowShift = this.chart.interpolateX(startWith / (length));
         const wrapper = this.container.querySelector('.tgc-x__wrapper') as HTMLElement;
         if (wrapper) {
-            wrapper.style.transform = `translateX(-${windowShift}px)`;
+            transform(wrapper, translateX(-windowShift));
         }
     }
 
@@ -148,7 +148,7 @@ export default class XAxis {
             const item = items[i] as HTMLElement;
             const x = this.chart.interpolateX(i / (length));
             const isVisible = this.visible.find(id => id === i);
-            item.style.transform = `translateX(${x - 20}px)`;
+            transform(item, translateX(x - 20));
             if (isVisible) {
                 item.style.opacity = '1';
             } else {

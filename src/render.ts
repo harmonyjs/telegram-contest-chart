@@ -9,7 +9,6 @@ let drawTasks: {
 } = {};
 
 let last = 0;
-let i = 0;
 
 function loop() {
     isRunning = true;

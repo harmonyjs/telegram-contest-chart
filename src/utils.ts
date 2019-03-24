@@ -64,11 +64,7 @@ export function animation(options: AnimationOptions): AnimationCallback {
             getValue.finished = true;
             return to;
         }
-        return (
-            // Math.round((
-                from + delta * progress
-            // ) * 1000) / 1000
-        );
+        return from + delta * progress;
     };
     getValue.from = from;
     getValue.to = to;
@@ -103,4 +99,61 @@ export function humanNumber(num: number): string | number {
   if (num >= 1000)
     return round(num/1000)+'K';
   return round(num);
+}
+
+export function className(block: string, element?: string, mod?: string): string {
+    let c = `tgc-${block}`;
+    if (element) {
+        c += '__' + element;
+    }
+    if (mod) {
+        c += '-' + mod;
+    }
+    return c;
+}
+
+export function join(...args: (string|number)[]): string {
+    return args.join('');
+}
+
+export type DivFunction = (...args: string[]) => string;
+
+export type StyleObject = {
+    [name: string]: string | number
+};
+
+export function div(block: string, element?: string, mod?: string, style?: StyleObject): DivFunction {
+    return function(...children: (string|number)[]): string {
+        let s;
+        if (style) {
+            const propsString = join(...Object.keys(style).map(prop => `${prop}: ${style[prop]};`));
+            s = `style="${propsString}"`;
+        }
+        return `<div class="${className(block, element, mod)}" ${s}>${join(...children)}</div>`;
+    }
+}
+
+export function divWithStyle(classNameArgs: string[], style: StyleObject) {
+    const [b, e, m] = classNameArgs;
+    return div(b, e, m, style);
+}
+
+export function on(el: HTMLElement, eventName: string, handler: Function, ctx: Object) {
+    el.addEventListener(eventName, handler.bind(ctx));
+}
+
+export function transform(el: HTMLElement, value: string) {
+    el.style.transform = value;
+}
+
+export function translateX(num: number): string {
+    return `translateX(${num}px)`;
+}
+
+export function find(container: HTMLElement, className: string): HTMLElement {
+    const el = container.querySelector('.' + className) as HTMLElement;
+    if (el === null) {
+        throw new Error('Something went wrong');
+    }
+    return el;
 }

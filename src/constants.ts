@@ -1,6 +1,6 @@
 export const LINE_TYPE = 'line';
 export const X_TYPE = 'x';
-export const FRAME_RATE_LIMIT = 14;
+export const FRAME_RATE_LIMIT = 16;
 
 export const EXTRA_POINTS_ON_THE_LEFT = 1;
 export const EXTRA_POINTS_ON_THE_RIGHT = 1;

@@ -26,6 +26,15 @@ canvas {
     flex-wrap: wrap;
 }
 
+.contacts {
+    margin-top: 24px;
+    opacity: .7;
+}
+
+.dark .contacts, .dark .contacts > a {
+    color: white;
+}
+
 .chart {
     min-width: 300px;
     width: 460px;
@@ -39,6 +48,7 @@ canvas {
     flex-direction: column;
     flex: 1 0 100%;
     user-select: none;
+    transform: translate(0, 0);
 }
 
 .tgc-chart__title {
