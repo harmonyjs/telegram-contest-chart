@@ -148,23 +148,24 @@ export default class Brush extends EventEmitter {
         transform(self.brushWindow, translateX(self.position));
 
         self.emit('change', {
-            window: this.window,
-            position: this.position,
+            window: self.window,
+            position: self.position,
             action: BRUSH_WINDOW_DIRECTION.LEFT
         });
     }
 
     handleMouseDown(event: MouseEvent | TouchEvent) {
+        const self = this;
         const { target, clientX } = handleEvent(event);
-        const isClickOnBrushWindow = target === this.brushWindow;
-        const isClickOnLeftHandle = target === this.brushLeftHandle;
-        const isClickOnRightHandle = target === this.brushRightHandle;
+        const isClickOnBrushWindow = target === self.brushWindow;
+        const isClickOnLeftHandle = target === self.brushLeftHandle;
+        const isClickOnRightHandle = target === self.brushRightHandle;
         if (!isClickOnBrushWindow && !isClickOnRightHandle && !isClickOnLeftHandle) {
             return;
         }
-        const rect = this.container.getBoundingClientRect();
-        const brush = this.brushWindow.getBoundingClientRect();
-        this.brushWindowDnDSession = {
+        const rect = self.container.getBoundingClientRect();
+        const brush = self.brushWindow.getBoundingClientRect();
+        self.brushWindowDnDSession = {
             clientX: clientX - rect.left,
             action: (
                 isClickOnRightHandle ? BRUSH_WINDOW_DIRECTION.RIGHT :
