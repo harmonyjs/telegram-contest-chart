@@ -242,7 +242,6 @@ export default class Line {
             return 0;
         }
         const data = this.getCurrentData();
-        // console.log(data);
         return Math.max(...data);
     }
 

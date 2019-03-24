@@ -37,8 +37,10 @@
   <script>
       window.isDarkMode = false;
       _data_.forEach((data, i) => {
+        var n = i + 1;
         new Chart({
-            container: document.querySelector('.chart' + (i + 1)),
+            title: 'Chart #' + n,
+            container: document.querySelector('.chart' + n),
             data
         })
       });

@@ -69,24 +69,23 @@ export default class Chart {
     private _prevCurrentMax?: number;
 
     constructor(private options: ChartOptions) {
+        const self = this;
         if (options.container === null) {
             throw new Error(`container options is mandatory`);
         }
-        this.container = options.container;
-        this.data = options.data;
-        this.context = [];
-        this.width = options.width || this.getContainerWidth() || 0;
-        this.height = options.height || ((this.width * WIDTH_HEIGHT_RATIO) | 0) || 0;
-        this.lines = [];
-        this.brushLines = [];
+        self.container = options.container;
+        self.data = options.data;
+        self.context = [];
+        self.width = options.width || self.getContainerWidth() || 0;
+        self.height = options.height || ((self.width * WIDTH_HEIGHT_RATIO) | 0) || 0;
+        self.lines = [];
+        self.brushLines = [];
 
-        this.interpolateX = interpolate(0, this.width);
+        self.interpolateX = interpolate(0, self.width);
 
-        const { title } = this.options;
-
-        this.container.classList.add('tgc-chart');
-        this.container.innerHTML = `
-            <div class="tgc-chart__title">${ title || `Unnamed Chart` }</div>
+        self.container.classList.add('tgc-chart');
+        self.container.innerHTML = `
+            <div class="tgc-chart__title">${ self.options.title || `Unnamed Chart` }</div>
             <div class="tgc-viewport">
                 <div class="tgc-lines"></div>
                 <div class="tgc-cursor"></div>
@@ -107,62 +106,61 @@ export default class Chart {
         `;
 
         if (options.width) {
-            this.container.style.width = `${options.width}px`;
+            self.container.style.width = `${options.width}px`;
         }
         if (options.height) {
-            this.container.style.height = `${options.height}px`;
+            self.container.style.height = `${options.height}px`;
         }
-
         
-        this.popover = this.find('.tgc-popover');
-        this.popoverDate = this.find('.tgc-popover__date');
-        this.popoverValues = this.find('.tgc-popover__values');
-        this.chartCursor = this.find('.tgc-cursor');
+        self.popover = self.find('.tgc-popover');
+        self.popoverDate = self.find('.tgc-popover__date');
+        self.popoverValues = self.find('.tgc-popover__values');
+        self.chartCursor = self.find('.tgc-cursor');
 
-        const linesContainer = this.find('.tgc-lines');
-        const viewportContainer = this.find('.tgc-viewport');
+        const linesContainer = self.find('.tgc-lines');
+        const viewportContainer = self.find('.tgc-viewport');
 
         // 
         // Get viewport size
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-        this.viewportRect = viewportContainer.getBoundingClientRect();
-        const { top, left, right, bottom } = this.viewportRect;
+        self.viewportRect = viewportContainer.getBoundingClientRect();
+        const { top, left, right, bottom } = self.viewportRect;
         const viewport = {
-            width: (right - left) || this.width,
-            height: (bottom - top) || this.height
+            width: (right - left) || self.width,
+            height: (bottom - top) || self.height
         };
 
-        viewportContainer.addEventListener('mouseenter', this.handleMouseEnter.bind(this));
-        viewportContainer.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
-        viewportContainer.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        viewportContainer.addEventListener('mouseenter', self.handleMouseEnter.bind(self));
+        viewportContainer.addEventListener('mouseleave', self.handleMouseLeave.bind(self));
+        viewportContainer.addEventListener('mousemove', self.handleMouseMove.bind(self));
 
         
         // 
         // Create brush and append to container
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-        this.brush = new Brush({
-            chart: this
+        self.brush = new Brush({
+            chart: self
         });
 
         // 
         // X Axis
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-        this.xAxis = new XAxis({
-            chart: this
+        self.xAxis = new XAxis({
+            chart: self
         });
 
         // 
         // Legend
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-        this.legend = new Legend({
-            data: this.data
+        self.legend = new Legend({
+            data: self.data
         });
-        this.legend.on('change', this.handleLegendChange.bind(this));
+        self.legend.on('change', self.handleLegendChange.bind(self));
 
 
-        this.xAxis.appendTo(this.container);
-        this.brush.appendTo(this.container);
-        this.legend.appendTo(this.container);
+        self.xAxis.appendTo(self.container);
+        self.brush.appendTo(self.container);
+        self.legend.appendTo(self.container);
 
 
 
@@ -172,20 +170,20 @@ export default class Chart {
 
 
 
-        for (let i = 0; i < this.data.columns.length; i++) {
-            const column = this.data.columns[i];
+        for (let i = 0; i < self.data.columns.length; i++) {
+            const column = self.data.columns[i];
             const [alias, ...dataArray] = column;
             const data = dataArray as number[]; //new Int32Array(dataArray as number[]);
-            const type = this.data.types[alias];
+            const type = self.data.types[alias];
             if (type === X_TYPE) {
                 xData = data;
                 continue;
             }
-            const name = this.data.names[alias];
-            const color = this.data.colors[alias];
+            const name = self.data.names[alias];
+            const color = self.data.colors[alias];
 
             const options = {
-                chart: this,
+                chart: self,
                 alias: alias as string,
                 name,
                 color,
@@ -197,7 +195,7 @@ export default class Chart {
             };
 
             const line = new Line(options);
-            this.lines.push(line);
+            self.lines.push(line);
 
             const brushLine = new Line({
                 ...options,
@@ -205,30 +203,30 @@ export default class Chart {
                 className: "tgc-brush__line",
                 isBrush: true
             });
-            this.brushLines.push(brushLine);
+            self.brushLines.push(brushLine);
         }
 
-        linesContainer.append(...this.lines.map(line => line.getContainer()));
+        linesContainer.append(...self.lines.map(line => line.getContainer()));
 
-        this.xAxis.addData(xData);
+        self.brush.on('change', self.handleWindowChange.bind(self));
 
-        this.brush.addLines(this.brushLines);
-        this.brush.on('change', this.handleWindowChange.bind(this));
+        self.brush.addLines(self.brushLines);
+
+        self.xAxis.addData(xData);
 
         // 
         // YAxis
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
-        this.yAxis = new YAxis({
-            chart: this,
+        self.yAxis = new YAxis({
+            chart: self,
             viewport
         });
-        this.yAxis.appendTo(viewportContainer);
+        self.yAxis.appendTo(viewportContainer);
 
-        (window as any).render = this.handleWindowChange.bind(this);
+        (window as any).render = self.handleWindowChange.bind(self);
 
-        this.lines.forEach(line => line.render());
-        this.brushLines.forEach(line => line.render());
-        this.xAxis.render();
+        self.lines.forEach(line => line.render());
+        self.brushLines.forEach(line => line.render());
     }
 
     render(recursive: boolean = false) {
@@ -243,20 +241,15 @@ export default class Chart {
     }
 
     handleWindowChange() {
-        // console.log('handleWindowChange');
         this.render();
     }
 
     handleLegendChange(event: LegendChangeEvent) {
-        console.log(event.alias, event.state);
         const line = this.getLine(this.lines, event.alias);
         line[event.state ? 'show' : 'hide']();
         const brushLine = this.getLine(this.brushLines, event.alias);
         brushLine[event.state ? 'show' : 'hide']();
         this.render();
-        // render('chart brush lines render', () => {
-        //     this.brushLines.forEach(line => line.render());
-        // });
     }
 
     handleMouseEnter(e: MouseEvent | TouchEvent) {

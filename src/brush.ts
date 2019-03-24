@@ -3,6 +3,7 @@ import Line from './line';
 import { minmax, animation, AnimationCallback, interpolate, InterpolationFunction, handleEvent } from './utils';
 import EventEmitter, { Event } from './event-emitter';
 import { X_AXIS_ANIMATION_DURATION, BRUSH_WINDOW_DIRECTION, MINIMAL_POINTS_IN_VIEW, EXTRA_POINTS_ON_THE_LEFT, EXTRA_POINTS_ON_THE_RIGHT } from './constants';
+import render from './render';
 
 export interface BrushChangeEvent extends Event {
     window: BrushWindow
@@ -55,7 +56,11 @@ export default class Brush extends EventEmitter {
 
     lines: Line[] = [];
 
-    window: BrushWindow;
+    window: BrushWindow = [
+        (() => 0) as AnimationCallback, 
+        (() => 0) as AnimationCallback, 
+        0
+    ];
 
     position: number;
 
@@ -70,14 +75,6 @@ export default class Brush extends EventEmitter {
         super();
 
         this.chart = options.chart;
-
-        this.window = [
-            // animation({ from: 1.9, to: 1.9, seconds: 0 }), 
-            // 1.5
-            animation({ from: 0, to: 0, seconds: 0 }), 
-            animation({ from: 5, to: 5, seconds: 0 }),
-            5
-        ];
 
         // this.dataLength = options.dataLength;
 
@@ -138,19 +135,35 @@ export default class Brush extends EventEmitter {
     }
 
     addLines(lines: Line[]) {
+
         this.lines.push(...lines);
+
+        const maxIndex = this.getMaxDataIndex();
+        const quarter = Math.round(maxIndex * 0.75);
+
         this.brushLinesContainer.append(...lines.map(line => line.getContainer()));
-        this.interpolateWindowWidthToPoints = interpolate(0, this.getMaxDataIndex());
+        this.interpolateWindowWidthToPoints = interpolate(0, maxIndex);
+        
+        this.window = [
+            animation({ from: quarter, to: quarter, seconds: 0 }), 
+            animation({ from: maxIndex, to: maxIndex, seconds: 0 }),
+            maxIndex - quarter
+        ];
 
         //
         const { startWith, exact: { length } } = this.getWindow();
-        const maxIndex = this.getMaxDataIndex();
         this.interpolatePointsToWindowWidth = interpolate(0, this.width);
         this.minimalWindowWidth = MINIMAL_POINTS_IN_VIEW * this.interpolatePointsToWindowWidth(1/maxIndex);
         this.windowWidth = this.interpolatePointsToWindowWidth(length / maxIndex);
         this.brushWindow.style.width = `${this.windowWidth}px`;
         this.position = this.interpolatePointsToWindowWidth(startWith / maxIndex);
         this.brushWindow.style.transform = `translateX(${this.position}px)`;
+
+        this.emit('change', {
+            window: this.window,
+            position: this.position,
+            action: BRUSH_WINDOW_DIRECTION.LEFT
+        });
     }
 
     handleMouseDown(event: MouseEvent | TouchEvent) {
@@ -180,64 +193,67 @@ export default class Brush extends EventEmitter {
             return;
         }
 
-        const { clientX: eventClientX } = handleEvent(event);
-
-        const { exact: { endAt, length } } = this.getWindow();
-
-        // console.log('move', { length });
-
-        const { clientX, action, rect, brush } = this.brushWindowDnDSession;
-
-        const px = eventClientX - rect.left;
-        const points = this.interpolateWindowWidthToPoints(px / this.width);
-        const delta = eventClientX - rect.left - clientX;
-
-        if (
-            action === BRUSH_WINDOW_DIRECTION.LEFT
-        ) {
-            this.updateStartWith({ 
-                points: Math.min(
-                    points,
-                    endAt - MINIMAL_POINTS_IN_VIEW
-                ) 
-            });
-            this.updatePosition();
-            this.updateWindowWidth();
-        }
-        if (action === BRUSH_WINDOW_DIRECTION.MOVE) {
-            const startWith = this.interpolateWindowWidthToPoints((brush.left - rect.left + delta) / this.width);
-            const endAt = this.interpolateWindowWidthToPoints((brush.right - rect.left + delta) / this.width);
-            const startTime = Date.now();
-            if (delta < 0) {
-                const startWithNext = this.updateStartWith({
-                    points: startWith,
-                    startTime
-                });
-                this.updateEndAt({
-                    points: startWithNext + length,
-                    startTime
-                });
-            } else {
-                const endAtNext = this.updateEndAt({
-                    points: endAt,
-                    startTime
-                });
-                this.updateStartWith({
-                    points: endAtNext - length,
-                    startTime
-                });
+        render('brush move', () => {
+            if (!this.brushWindowDnDSession) {
+                return;
             }
-            this.updatePosition();
-        }
-        if (action === BRUSH_WINDOW_DIRECTION.RIGHT) {
-            this.updateEndAt({ points });
-            this.updateWindowWidth();
-        }
-        
-        this.emit('change', {
-            window: this.window,
-            position: this.position,
-            action
+            const { clientX: eventClientX } = handleEvent(event);
+
+            const { exact: { endAt, length } } = this.getWindow();
+
+            const { clientX, action, rect, brush } = this.brushWindowDnDSession;
+
+            const px = eventClientX - rect.left;
+            const points = this.interpolateWindowWidthToPoints(px / this.width);
+            const delta = eventClientX - rect.left - clientX;
+
+            if (
+                action === BRUSH_WINDOW_DIRECTION.LEFT
+            ) {
+                this.updateStartWith({ 
+                    points: Math.min(
+                        points,
+                        endAt - MINIMAL_POINTS_IN_VIEW
+                    ) 
+                });
+                this.updatePosition();
+                this.updateWindowWidth();
+            }
+            if (action === BRUSH_WINDOW_DIRECTION.MOVE) {
+                const startWith = this.interpolateWindowWidthToPoints((brush.left - rect.left + delta) / this.width);
+                const endAt = this.interpolateWindowWidthToPoints((brush.right - rect.left + delta) / this.width);
+                const startTime = Date.now();
+                if (delta < 0) {
+                    const startWithNext = this.updateStartWith({
+                        points: startWith,
+                        startTime
+                    });
+                    this.updateEndAt({
+                        points: startWithNext + length,
+                        startTime
+                    });
+                } else {
+                    const endAtNext = this.updateEndAt({
+                        points: endAt,
+                        startTime
+                    });
+                    this.updateStartWith({
+                        points: endAtNext - length,
+                        startTime
+                    });
+                }
+                this.updatePosition();
+            }
+            if (action === BRUSH_WINDOW_DIRECTION.RIGHT) {
+                this.updateEndAt({ points });
+                this.updateWindowWidth();
+            }
+            
+            this.emit('change', {
+                window: this.window,
+                position: this.position,
+                action
+            });
         });
     }
 
@@ -248,7 +264,6 @@ export default class Brush extends EventEmitter {
     updateStartWith(options: UpdateBrushWindowValueOptions) {
         const { points, startTime } = options;
         const { startWith: startWithPrev, exact: { endAt, length } } = this.getWindow();
-        // console.log('updateStartWith', { length });
         const startWithNext = minmax(
             0,
             points,
@@ -268,7 +283,6 @@ export default class Brush extends EventEmitter {
     updateEndAt(options: UpdateBrushWindowValueOptions) {
         const { points, startTime } = options;
         const { endAt: endAtPrev, exact: { startWith, length } } = this.getWindow();
-        // console.log('updateEndAt', { length });
         const endAtNext = minmax(
             MINIMAL_POINTS_IN_VIEW,
             points,

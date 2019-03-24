@@ -30,8 +30,9 @@ export default class XAxis {
         this.container = document.createElement("div");
         this.container.classList.add("tgc-x");
 
-        this.chart.brush.on('change', this.handleBrushChange.bind(this));
+        this.handleBrushChange = this.handleBrushChange.bind(this);
 
+        this.chart.brush.on('change', this.handleBrushChange);
     }
     
     getDate(point: number) {

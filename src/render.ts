@@ -1,3 +1,5 @@
+import { FRAME_RATE_LIMIT } from './constants';
+
 export type DrawTask = () => void;
 
 let isRunning = false;
@@ -12,7 +14,7 @@ let i = 0;
 function loop() {
     isRunning = true;
     requestAnimationFrame((t)=> {
-        if (t - last < 16) {
+        if (t - last < FRAME_RATE_LIMIT) {
             loop();
             return;
         }
@@ -22,14 +24,12 @@ function loop() {
             isRunning = false;
             return;
         }
-        // console.log('-------------- raf ----------------', i++);
         const tasks = drawTasks;
         drawTasks = {};
         while(keys.length) {
             const taskKey = keys.shift() || '';
             const task = tasks[taskKey];
             if (task) {
-                // console.log(taskKey);
                 task();
             }
         }

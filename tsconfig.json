@@ -4,6 +4,7 @@
         "module": "ES6",
         "strict": true,
         "strictFunctionTypes": false,
+        "strictPropertyInitialization": false,
         "baseUrl": ".",
         "outDir": "dist",
         "lib": [
