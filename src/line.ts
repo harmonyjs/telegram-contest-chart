@@ -26,6 +26,7 @@ export default class Line {
     canvas: HTMLCanvasElement;
 
     name: string;
+    alias: string;
     data: Int32Array;
 
     private _prevMax?: number;
@@ -41,6 +42,7 @@ export default class Line {
     m: Monitor;
     
     empty: boolean;
+    visible: boolean;
 
     interpolateY: InterpolationFunction;
 
@@ -50,6 +52,7 @@ export default class Line {
         this.chart = options.chart;
 
         this.name = options.name;
+        this.alias = options.alias;
 
         this.data = options.data;
 
@@ -63,8 +66,9 @@ export default class Line {
         this.container = document.createElement("div");
 
         this.canvas = document.createElement("canvas");
-        this.canvas.setAttribute('width', this.width.toString());
-        this.canvas.setAttribute('height', this.height.toString());
+        this.canvas.setAttribute('width', String(this.width));
+        this.canvas.setAttribute('height', String(this.height));
+        
 
         this.container.append(this.canvas);
 
@@ -79,12 +83,21 @@ export default class Line {
         this.context.scale(1, -1);
 
         this.empty = true;
+        this.visible = true;
     }
 
     render() {
         const { isBrush, color } = this.options;
         const ctx = this.context;
         const data = this.data;
+
+        const max = isBrush ? this.chart.getMax() : this.chart.getCurrentMax();
+
+        if (isBrush && this._prevMax === max) {
+            return;
+        }
+
+        this._prevMax = max;
 
         if (!this.empty) {
             this.clear();
@@ -103,18 +116,16 @@ export default class Line {
                     : this.chart.brush.getWindow()
         );
 
-        const max = isBrush ? this.chart.getMax() : this.chart.getCurrentMax();
-
         const startWithFloor = Math.floor(startWith);
         const pointsCeil = Math.ceil(length);
 
-        this.m.set('line' + isBrush, {
-            startWith: startWith, length,
-            leftPad,
-            rightPad,
-            startWithFloor: startWithFloor,
-            pointsCeil: pointsCeil
-        });
+        // this.m.set('line' + isBrush, {
+        //     startWith: startWith, length,
+        //     leftPad,
+        //     rightPad,
+        //     startWithFloor: startWithFloor,
+        //     pointsCeil: pointsCeil
+        // });
         
         ctx.strokeStyle = color;
         ctx.lineWidth = isBrush ? BRUSH_LINE_WIDTH : MAIN_LINE_WIDTH;
@@ -139,6 +150,16 @@ export default class Line {
         ctx.stroke();
         
         this.empty = false;
+    }
+
+    show() {
+        this.visible = true;
+        this.container.classList.remove('tgc-line_hidden'); // TODO through render?
+    }
+
+    hide() {
+        this.visible = false;
+        this.container.classList.add('tgc-line_hidden'); // TODO through render?
     }
 
     clear() {
@@ -170,6 +191,9 @@ export default class Line {
     }
 
     getMax() {
+        if (!this.visible) {
+            return 0;
+        }
         if (typeof this._max === 'number') {
             return this._max;
         }
@@ -193,6 +217,9 @@ export default class Line {
     }
 
     getCurrentMax() {
+        if (!this.visible) {
+            return 0;
+        }
         const data = this.getCurrentData();
         // console.log(data);
         return Math.max(...data);

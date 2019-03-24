@@ -19,9 +19,9 @@ new Chart({
     data: data[1]
 });
 
-new Chart({
-    container: document.querySelector('.chart3'),
-    data: data[2],
-    width: 500,
-    height: 200
-});
+// new Chart({
+//     container: document.querySelector('.chart3'),
+//     data: data[2],
+//     width: 500,
+//     height: 200
+// });

@@ -67,16 +67,23 @@ canvas {
     /* outline: 1px rgba(0, 0, 0, .12) solid; */
 }
 
-.tgc-lines__canvas {
+.tgc-line {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
+    transform: translateY(0);
+    transition: opacity .2s linear, transform .33s linear;
 }
 
-.tgc-lines__canvas:first-child {
+.tgc-line:first-child {
     position: relative;
+}
+
+.tgc-line_hidden {
+    opacity: 0;
+    transform: translateY(-100%);
 }
 
 .tgc-brush {
@@ -117,7 +124,7 @@ canvas {
     border: 1px rgba(100, 100, 200, .3) solid;
     border-left-width: 5px;
     border-right-width: 5px;
-    box-shadow: 0 0 0 3000px rgba(100, 100, 140, .05);
+    box-shadow: 0 0 0 3000px rgba(100, 100, 140, .08);
     transform: translate(0, 0);
     cursor: grab;
 }
@@ -172,4 +179,56 @@ canvas {
 
 .tgc-y__num-up, .tgc-y__num-down {
     opacity: 0;
+}
+
+.tgc-legend {
+    display: flex;
+    margin-top: 12px;
+}
+
+.tgc-legend__item {
+    display: flex;
+    height: 38px;
+    border: 1px #ccc solid;
+    border-radius: 19px;
+    padding: 6px;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.tgc-legend__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.tgc-legend__icon:after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.tgc-legend__item[data-visible="true"] .tgc-legend__icon:after {
+    background-color: transparent;
+}
+
+.tgc-legend__icon > svg {
+    fill: white;
+}
+
+.tgc-legend__name {
+    font-size: 15px;
+    line-height: 24px;
+    padding: 0 10px;
 }

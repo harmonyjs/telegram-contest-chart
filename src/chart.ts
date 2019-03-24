@@ -2,6 +2,7 @@ import Line from './line';
 import { interpolate, InterpolationFunction, animation, AnimationCallback } from './utils';
 import Brush, { BrushChangeEvent } from './brush';
 import YAxis from './y-axis';
+import Legend, { LegendChangeEvent } from './legend';
 import Monitor from './monitor';
 import render from './render';
 import { LINE_TYPE, Y_AXIS_ANIMATION_DURATION, BRUSH_HEIGHT, WIDTH_HEIGHT_RATIO } from './constants';
@@ -51,12 +52,14 @@ export default class Chart {
     brushLines: Line[];
 
     brush: Brush;
-
     yAxis: YAxis;
+    legend: Legend;
 
     _maxValueAnimation?: AnimationCallback;
+    _currentMaxValueAnimation?: AnimationCallback;
 
     private _prevMax?: number;
+    private _prevCurrentMax?: number;
 
     constructor(private options: ChartOptions) {
         if (options.container === null) {
@@ -108,6 +111,15 @@ export default class Chart {
         this.brush.appendTo(this.container);
 
         // 
+        // Legend
+        // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
+        this.legend = new Legend({
+            data: this.data
+        });
+        this.legend.appendTo(this.container);
+        this.legend.on('change', this.handleLegendChange.bind(this));
+
+        // 
         // Get viewport size
         // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
         const { top, left, right, bottom } = viewportContainer.getBoundingClientRect();
@@ -135,7 +147,7 @@ export default class Chart {
                 data,
                 width: viewport.width,
                 height: viewport.height,
-                className: "tgc-lines__canvas",
+                className: "tgc-line",
                 isBrush: false,
                 monitor
             });
@@ -161,6 +173,9 @@ export default class Chart {
         this.brush.addLines(this.brushLines);
         this.brush.on('change', this.handleWindowChange.bind(this));
 
+        // 
+        // YAxis
+        // ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
         this.yAxis = new YAxis({
             chart: this,
             viewport
@@ -174,16 +189,39 @@ export default class Chart {
     }
 
     render(recursive: boolean = false) {
-        if (recursive && !this._maxValueAnimation && !this.brush.hasAnimation()) {
+        if (recursive && !this._maxValueAnimation && !this._currentMaxValueAnimation && !this.brush.hasAnimation()) {
             return;
         }
-        this.lines.forEach(line => line.render());
-        render('chart render', () => this.render(true));
+        render('chart lines render', () => {            
+            this.lines.forEach(line => line.render());
+            this.brushLines.forEach(line => line.render());
+            this.render(true); // TODO ?
+        });
     }
 
     handleWindowChange() {
-        console.log('handleWindowChange');
-        render('chart render', () => this.render());
+        // console.log('handleWindowChange');
+        this.render();
+    }
+
+    handleLegendChange(event: LegendChangeEvent) {
+        console.log(event.alias, event.state);
+        const line = this.getLine(this.lines, event.alias);
+        line[event.state ? 'show' : 'hide']();
+        const brushLine = this.getLine(this.brushLines, event.alias);
+        brushLine[event.state ? 'show' : 'hide']();
+        this.render();
+        // render('chart brush lines render', () => {
+        //     this.brushLines.forEach(line => line.render());
+        // });
+    }
+
+    getLine(lines: Line[], alias: string) {
+        const line = lines.find(line => line.alias === alias);
+        if (!line) {
+            throw new Error('Line is not found');
+        }
+        return line;
     }
 
     getContainerWidth(): number {
@@ -192,17 +230,7 @@ export default class Chart {
     }
 
     getMax() {
-        return Math.max(...this.lines.map(line => line.getMax()));
-    }
-
-    getMin() {
-        return Math.min(...this.lines.map(line => line.getMin()));
-    }
-
-    getCurrentMax() {
-        const max = this.getCurrentMaxExact();
-        // console.log(toInt(startWith), toInt(startWith+numOfOperatingPoints));
-        // console.log(max);
+        const max = this.getMaxExact();
         if (this._prevMax && this._prevMax !== max) {
             const from = this._maxValueAnimation ? this._maxValueAnimation() : this._prevMax;
             this._maxValueAnimation = animation({
@@ -215,12 +243,43 @@ export default class Chart {
         }
         if (this._maxValueAnimation) {
             const value = this._maxValueAnimation();
-            if (value === this._prevMax) {
+            if (value === this._prevMax) { // TODO finished?
                 delete this._maxValueAnimation;
             }
             return value;
         }
         this._prevMax = max;
+        return max;
+    }
+
+    getMaxExact() {
+        return Math.max(...this.lines.map(line => line.getMax()));
+    }
+
+    getMin() {
+        return Math.min(...this.lines.map(line => line.getMin()));
+    }
+
+    getCurrentMax() {
+        const max = this.getCurrentMaxExact();
+        if (this._prevCurrentMax && this._prevCurrentMax !== max) {
+            const from = this._currentMaxValueAnimation ? this._currentMaxValueAnimation() : this._prevCurrentMax;
+            this._currentMaxValueAnimation = animation({
+                from, 
+                to: max, 
+                seconds: Y_AXIS_ANIMATION_DURATION
+            });
+            this._prevCurrentMax = max;
+            return this._currentMaxValueAnimation();
+        }
+        if (this._currentMaxValueAnimation) {
+            const value = this._currentMaxValueAnimation();
+            if (value === this._prevCurrentMax) { // TODO finished?
+                delete this._currentMaxValueAnimation;
+            }
+            return value;
+        }
+        this._prevCurrentMax = max;
         return max;
     }
 

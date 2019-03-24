@@ -62,6 +62,7 @@ export default class YAxis {
 
         
         this.chart.brush.on('change', this.handleWindowChange.bind(this));
+        this.chart.legend.on('change', this.handleWindowChange.bind(this));
         
         // setInterval(() => this.handleWindowChange(), 1000);
     }
